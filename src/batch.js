@@ -5,13 +5,19 @@
 //
 // Caracteristicas:
 // - Truncado por defecto (head+tail, max_output) con spill del output completo
-//   a /tmp/opencode/batch/<archivo>.log; truncate:false devuelve todo inline.
+//   a /tmp/opencode/batch/<archivo>.log; truncate:false devuelve todo inline
+//   hasta el limite de seguridad (64 KB por comando); si se supera, recorta
+//   con head+tail igual y deriva al spill.
 // - truncate y max_output se pueden pisar por comando, ademas de por llamada.
 // - Memoria acotada: cada stream guarda hasta 1 MB en memoria; si se pasa,
 //   deriva el resto a un archivo temporal y conserva cabeza y cola para el
 //   recorte (asi un output de GBs no revienta el proceso).
 // - Al vencer el timeout se mata el grupo de procesos completo (nietos incluidos).
+// - Si un comando falla, el resumen agrega "posibles errores:" con las lineas
+//   clave del output (hasta 5), para no tener que abrir el spill.
 // - Progreso en vivo via context.progress (x/N completados).
+// - Limpieza de spill: barre los archivos mas viejos que spill_ttl_ms al
+//   cargar el plugin y en cada uso del tool.
 // - Defaults configurables por plugin options: concurrency, max_output,
 //   timeout, truncate y spill_ttl_ms.
 
@@ -30,6 +36,13 @@ const SPILL_DIR = join(tmpdir(), "opencode", "batch")
 const BUFFER_LIMIT = 1024 * 1024
 const KEEP_MIN = 64 * 1024
 const KEEP_MAX = 1024 * 1024
+// Limite de seguridad para truncate:false: si stdout+stderr de un comando
+// superan este tope, se recorta con head+tail y se deriva el completo al
+// spill (un output de MBs no debe entrar entero al contexto por accidente).
+const SAFETY_CAP_CHARS = 64 * 1024
+const ERROR_SIGNAL_LIMIT = 5
+const ERROR_LINE_RE =
+  /(error|fail|cannot|no such file|not found|not ok|exception|timed out|timeout|eacces|enoent|✖)/i
 
 function truncate(text, max) {
   if (typeof text !== "string") return { text: "", truncated: false }
@@ -274,8 +287,9 @@ async function runPool(jobs, concurrency, signal, defaults, onDone) {
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  const trim = (n, unit) => `${n.toFixed(1).replace(/\.0$/, "")} ${unit}`
+  if (bytes < 1024 * 1024) return trim(bytes / 1024, "KB")
+  return trim(bytes / (1024 * 1024), "MB")
 }
 
 // Borra archivos de spill mas viejos que ttlMs. Nunca debe fallar la tool.
@@ -344,12 +358,20 @@ async function spillResult(result) {
 async function prepare(result) {
   let out
   let err
+  let safety = false
   if (result.doTruncate) {
     out = await result.stdout.display(result.maxOutput)
     err = await result.stderr.display(result.maxOutput)
-  } else {
+  } else if (result.stdout.total + result.stderr.total <= SAFETY_CAP_CHARS) {
     out = { text: await result.stdout.fullText(), truncated: false }
     err = { text: await result.stderr.fullText(), truncated: false }
+  } else {
+    // Limite de seguridad: aunque el modelo pidio truncate:false, un output
+    // gigante no entra completo al contexto; se recorta y se deriva al spill.
+    safety = true
+    const showMax = Math.min(result.maxOutput, SAFETY_CAP_CHARS)
+    out = await result.stdout.display(showMax)
+    err = await result.stderr.display(showMax)
   }
 
   let spill = null
@@ -362,7 +384,24 @@ async function prepare(result) {
     }
   }
   await cleanupTemps(result)
-  return { ...result, stdoutOut: out.text, stderrOut: err.text, spill, spillError }
+  return { ...result, stdoutOut: out.text, stderrOut: err.text, spill, spillError, safety }
+}
+
+// Busca lineas que parezcan errores en el texto ya recortado, para que el
+// resumen sea autosuficiente cuando un comando falla.
+function errorSignals(text, limit = ERROR_SIGNAL_LIMIT) {
+  if (!text) return []
+  const seen = new Set()
+  const signals = []
+  for (const raw of String(text).split("\n")) {
+    const line = raw.trim()
+    if (!line || line.length > 300 || !ERROR_LINE_RE.test(line)) continue
+    if (seen.has(line)) continue
+    seen.add(line)
+    signals.push(line.slice(0, 200))
+    if (signals.length >= limit) break
+  }
+  return signals
 }
 
 function format(results) {
@@ -373,6 +412,19 @@ function format(results) {
     lines.push("")
     lines.push(`$ ${r.command}${r.workdir ? `   (cwd: ${r.workdir})` : ""}`)
     lines.push(`exit ${r.code} en ${r.ms}ms`)
+    if (!r.ok) {
+      const senales = errorSignals(`${r.stdoutOut ?? ""}\n${r.stderrOut ?? ""}`)
+      if (senales.length > 0) {
+        lines.push("posibles errores:")
+        for (const senal of senales) lines.push(`- ${senal}`)
+      }
+    }
+    if (r.safety) {
+      lines.push(
+        `[truncate:false superó el límite de seguridad (${formatSize(SAFETY_CAP_CHARS)} por comando): ` +
+          `se muestra inicio y final]`,
+      )
+    }
     if (r.spill) {
       const lineCount = `${r.spill.lines} línea${r.spill.lines === 1 ? "" : "s"}`
       lines.push(`[output completo (${formatSize(r.spill.bytes)}, ${lineCount}): ${r.spill.path}]`)
@@ -398,6 +450,9 @@ export default {
       spillTtlMs: positive(opt.spill_ttl_ms, DEFAULT_SPILL_TTL_MS),
     }
 
+    // Higiene: barre los spills viejos al cargar el plugin, no solo al usarlo.
+    await pruneSpill(defaults.spillTtlMs)
+
     await ctx.tool.transform((editor) => {
       editor.add({
         name: "batch",
@@ -405,10 +460,15 @@ export default {
           "Ejecuta varios comandos shell en paralelo y devuelve un resumen compacto. " +
           "Devuelve un único string de texto con el resumen: no es un array, no lo iteres ni lo indexes; " +
           "en Code Mode asignalo a una variable y devolvelo tal cual. " +
-          "Ideal para correr tests, greps o builds independientes en un solo paso sin llenar el contexto. " +
-          "Si un output se recorta, muestra inicio y final e informa la ruta del archivo con el output completo " +
-          "(consultalo con grep o lectura parcial si necesitás un dato puntual; no re-ejecutes el comando). " +
-          "Con truncate:false devuelve los outputs completos sin recortar, cuando necesitás el detalle entero.",
+          "Usalo para 2 o más comandos con salida voluminosa (tests, builds, greps); " +
+          "para un solo comando o salidas chicas, usá shell directo. " +
+          "El resumen alcanza para decidir si los comandos pasaron o fallaron: no re-ejecutes comandos " +
+          "ni explores el proyecto para confirmarlo. " +
+          "Si un output se recorta, muestra inicio y final e informa la ruta del archivo con el output completo; " +
+          "abrilo con grep o lectura parcial solo si el pedido exige un dato que el resumen no tenga. " +
+          "Si un comando falla, incluye 'posibles errores:' con las líneas clave de su output. " +
+          `Con truncate:false devuelve los outputs completos, salvo que un comando supere el límite de ` +
+          `seguridad (${formatSize(SAFETY_CAP_CHARS)} por comando): ahí recorta y deriva igual al archivo.`,
         input: {
           type: "object",
           properties: {
@@ -440,11 +500,11 @@ export default {
             },
             max_output: {
               type: "number",
-              description: `Cuanto output conservar por comando, en chars (default ${defaults.maxOutput}; se ignora si truncate es false).`,
+              description: `Cuanto output conservar por comando, en chars (default ${defaults.maxOutput}; con truncate:false solo aplica al recorte por límite de seguridad).`,
             },
             truncate: {
               type: "boolean",
-              description: "Si es false, devuelve stdout/stderr completos sin recortar ni derivar a archivo (default: true).",
+              description: `Si es false, devuelve stdout/stderr completos (default: true), salvo que el comando supere el límite de seguridad (${formatSize(SAFETY_CAP_CHARS)}).`,
             },
           },
           required: ["commands"],
