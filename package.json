@@ -1,0 +1,30 @@
+{
+  "name": "opencode-batch-commands",
+  "version": "1.0.0",
+  "description": "Plugin de OpenCode 2: tool batch para correr comandos shell en paralelo y devolver un resumen compacto.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/batch.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "batch",
+    "parallel",
+    "shell"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joacomedel/opencode-batch-commands.git"
+  }
+}
