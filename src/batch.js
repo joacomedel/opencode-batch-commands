@@ -2,23 +2,34 @@
 // No importa @opencode/plugin a proposito para poder soltarlo sin dependencias.
 // Registra un unico tool que ejecuta N comandos con un pool de concurrencia y
 // devuelve solo un resumen compacto (ahorra contexto y round-trips al modelo).
-// Por defecto trunca stdout/stderr con recorte head+tail; con truncate:false
-// devuelve los outputs completos sin recortar. Si un stdout/stderr supera
-// max_output se muestra inicio+final y el output completo se guarda en
-// /tmp/opencode/batch/<archivo>.log. La ruta se informa con tamano y cantidad
-// de lineas para decidir si vale la pena consultarlo. Si no hubo truncado, no
-// se escribe ni se menciona ningun archivo.
+//
+// Caracteristicas:
+// - Truncado por defecto (head+tail, max_output) con spill del output completo
+//   a /tmp/opencode/batch/<archivo>.log; truncate:false devuelve todo inline.
+// - truncate y max_output se pueden pisar por comando, ademas de por llamada.
+// - Memoria acotada: cada stream guarda hasta 1 MB en memoria; si se pasa,
+//   deriva el resto a un archivo temporal y conserva cabeza y cola para el
+//   recorte (asi un output de GBs no revienta el proceso).
+// - Al vencer el timeout se mata el grupo de procesos completo (nietos incluidos).
+// - Progreso en vivo via context.progress (x/N completados).
+// - Defaults configurables por plugin options: concurrency, max_output,
+//   timeout, truncate y spill_ttl_ms.
 
 import { spawn } from "node:child_process"
-import { mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises"
+import { createReadStream, createWriteStream } from "node:fs"
+import { appendFile, mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { pipeline } from "node:stream/promises"
 
 const DEFAULT_TIMEOUT_MS = 120_000
 const DEFAULT_CONCURRENCY = 8
 const DEFAULT_MAX_OUTPUT = 4_000
+const DEFAULT_SPILL_TTL_MS = 24 * 60 * 60 * 1000
 const SPILL_DIR = join(tmpdir(), "opencode", "batch")
-const SPILL_TTL_MS = 24 * 60 * 60 * 1000
+const BUFFER_LIMIT = 1024 * 1024
+const KEEP_MIN = 64 * 1024
+const KEEP_MAX = 1024 * 1024
 
 function truncate(text, max) {
   if (typeof text !== "string") return { text: "", truncated: false }
@@ -30,90 +41,117 @@ function truncate(text, max) {
   }
 }
 
-function runOne(job, signal) {
-  const command = job.command
-  const workdir = job.workdir
-  const timeout = Number.isFinite(job.timeout) ? job.timeout : DEFAULT_TIMEOUT_MS
+// Captura un stream con memoria acotada. Hasta BUFFER_LIMIT guarda todo el
+// texto; despues deriva a un archivo temporal y mantiene cabeza y cola para
+// el recorte. `fullText()` devuelve el contenido completo (leyendo el archivo
+// si hubo derrame).
+class StreamCapture {
+  constructor(keepBytes, filePath) {
+    this.keep = keepBytes
+    this.filePath = filePath
+    this.parts = []
+    this.buffered = 0
+    this.pending = []
+    this.head = ""
+    this.tailParts = []
+    this.tailSize = 0
+    this.total = 0
+    this.lines = 0
+    this.stream = null
+    this.startPromise = null
+  }
 
-  return new Promise((resolve) => {
-    const started = Date.now()
-    let stdout = ""
-    let stderr = ""
-    let finished = false
+  get overflow() {
+    return this.stream !== null
+  }
 
-    let child
-    try {
-      child = spawn(command, {
-        cwd: workdir,
-        shell: true,
-        signal,
-        windowsHide: true,
-        env: process.env,
-      })
-    } catch (err) {
-      resolve({ command, workdir, ok: false, code: -1, ms: 0, stdout: "", stderr: String(err) })
+  push(text) {
+    if (!text) return
+    this.total += text.length
+    this.lines += (text.match(/\n/g) ?? []).length
+    const headLeft = this.keep - this.head.length
+    if (headLeft > 0) this.head += text.slice(0, headLeft)
+    this.tailParts.push(text)
+    this.tailSize += text.length
+    if (this.tailSize > this.keep * 2) {
+      const joined = this.tailParts.join("")
+      const tail = joined.slice(-this.keep)
+      this.tailParts = [tail]
+      this.tailSize = tail.length
+    }
+    if (this.stream) {
+      this.stream.write(text)
       return
     }
-
-    const timer = setTimeout(() => {
-      if (finished) return
-      stderr += `\n[timeout ${timeout}ms]`
-      try {
-        child.kill("SIGKILL")
-      } catch {}
-    }, timeout)
-
-    child.stdout?.on("data", (chunk) => {
-      stdout += chunk.toString()
-    })
-    child.stderr?.on("data", (chunk) => {
-      stderr += chunk.toString()
-    })
-
-    const done = (code) => {
-      if (finished) return
-      finished = true
-      clearTimeout(timer)
-      resolve({
-        command,
-        workdir,
-        ok: code === 0,
-        code,
-        ms: Date.now() - started,
-        stdout,
-        stderr,
-      })
+    if (this.startPromise) {
+      this.pending.push(text)
+      return
     }
+    if (this.buffered + text.length <= BUFFER_LIMIT) {
+      this.parts.push(text)
+      this.buffered += text.length
+      return
+    }
+    this.pending.push(text)
+    this.startPromise = this.start()
+  }
 
-    child.on("close", (code) => done(code === null ? -1 : code))
-    child.on("error", (err) => {
-      stderr += `\n${String(err)}`
-      done(-1)
-    })
-  })
-}
-
-async function runPool(jobs, concurrency, signal) {
-  const results = new Array(jobs.length)
-  let cursor = 0
-
-  const worker = async () => {
-    while (true) {
-      const index = cursor++
-      if (index >= jobs.length) return
-      results[index] = await runOne(jobs[index], signal)
+  async start() {
+    try {
+      await mkdir(SPILL_DIR, { recursive: true })
+      this.stream = createWriteStream(this.filePath, { flags: "a" })
+      const queued = [this.parts.join(""), ...this.pending]
+      this.parts = []
+      this.buffered = 0
+      this.pending = []
+      for (const chunk of queued) {
+        if (chunk) this.stream.write(chunk)
+      }
+    } catch (err) {
+      this.startPromise = null
+      this.pending = []
+      throw err
     }
   }
 
-  const size = Math.max(1, Math.min(concurrency, jobs.length))
-  await Promise.all(Array.from({ length: size }, worker))
-  return results
-}
+  async finish() {
+    if (this.startPromise) {
+      try {
+        await this.startPromise
+      } catch {}
+    }
+    if (this.stream) {
+      await new Promise((resolve) => this.stream.end(resolve))
+    }
+  }
 
-function formatSize(bytes) {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  text() {
+    return this.parts.join("")
+  }
+
+  tailText() {
+    return this.tailParts.join("")
+  }
+
+  async fullText() {
+    if (this.overflow) return readFile(this.filePath, "utf8")
+    return this.text()
+  }
+
+  // Texto para mostrar en el resumen, respetando maxOutput.
+  async display(maxOutput) {
+    if (!this.overflow) return truncate(this.text(), maxOutput)
+    if (this.total <= maxOutput) {
+      return { text: await readFile(this.filePath, "utf8"), truncated: false }
+    }
+    const half = Math.floor(maxOutput / 2)
+    const head = this.head.slice(0, half)
+    const tail = this.tailText().slice(-half)
+    return {
+      text: `${head}\n...[recortado ${this.total - maxOutput} chars]...\n${tail}`,
+      truncated: true,
+    }
+  }
 }
 
 function slugify(command) {
@@ -129,8 +167,119 @@ function stamp() {
   return new Date().toISOString().replace(/[:.]/g, "-")
 }
 
-// Borra archivos de spill mas viejos que SPILL_TTL_MS. Nunca debe fallar la tool.
-async function pruneSpill() {
+// Mata el grupo de procesos del comando (hijos y nietos incluidos).
+function killTree(child, state) {
+  if (state.killed) return
+  state.killed = true
+  try {
+    if (process.platform !== "win32" && child?.pid) process.kill(-child.pid, "SIGKILL")
+    else child?.kill("SIGKILL")
+  } catch {}
+}
+
+function runOne(job, index, signal, defaults) {
+  const command = job.command
+  const workdir = job.workdir
+  const timeout = Number.isFinite(job.timeout) ? job.timeout : defaults.timeout
+  const maxOutput = Number.isFinite(job.max_output) ? job.max_output : defaults.maxOutput
+  const doTruncate = job.truncate !== undefined ? job.truncate !== false : defaults.truncate
+  const keepBytes = Math.min(Math.max(KEEP_MIN, maxOutput), KEEP_MAX)
+  const rand = Math.random().toString(16).slice(2, 6)
+  const spillBase = join(SPILL_DIR, `${stamp()}-${index + 1}-${slugify(command)}-${rand}.log`)
+
+  const stdout = new StreamCapture(keepBytes, `${spillBase}.stdout.tmp`)
+  const stderr = new StreamCapture(keepBytes, `${spillBase}.stderr.tmp`)
+  const killState = { killed: false }
+
+  return new Promise((resolve) => {
+    const started = Date.now()
+    let finished = false
+    let child
+
+    const onAbort = () => killTree(child, killState)
+    try {
+      child = spawn(command, {
+        cwd: workdir,
+        shell: true,
+        signal,
+        detached: process.platform !== "win32",
+        windowsHide: true,
+        env: process.env,
+      })
+    } catch (err) {
+      resolve({ command, workdir, ok: false, code: -1, ms: 0, stdout, stderr, maxOutput, doTruncate, spillBase })
+      return
+    }
+
+    signal?.addEventListener?.("abort", onAbort)
+
+    const timer = setTimeout(() => {
+      if (finished) return
+      stderr.push(`\n[timeout ${timeout}ms]`)
+      killTree(child, killState)
+    }, timeout)
+
+    child.stdout?.on("data", (chunk) => stdout.push(chunk.toString()))
+    child.stderr?.on("data", (chunk) => stderr.push(chunk.toString()))
+
+    const done = async (code) => {
+      if (finished) return
+      finished = true
+      clearTimeout(timer)
+      signal?.removeEventListener?.("abort", onAbort)
+      try {
+        await Promise.all([stdout.finish(), stderr.finish()])
+      } catch {}
+      resolve({
+        command,
+        workdir,
+        ok: code === 0,
+        code: code === null ? -1 : code,
+        ms: Date.now() - started,
+        stdout,
+        stderr,
+        maxOutput,
+        doTruncate,
+        spillBase,
+      })
+    }
+
+    child.on("close", (code) => void done(code))
+    child.on("error", (err) => {
+      stderr.push(`\n${String(err)}`)
+      void done(-1)
+    })
+  })
+}
+
+async function runPool(jobs, concurrency, signal, defaults, onDone) {
+  const results = new Array(jobs.length)
+  let cursor = 0
+  let completed = 0
+
+  const worker = async () => {
+    while (true) {
+      const index = cursor++
+      if (index >= jobs.length) return
+      results[index] = await runOne(jobs[index], index, signal, defaults)
+      completed++
+      onDone?.(completed)
+    }
+  }
+
+  const size = Math.max(1, Math.min(concurrency, jobs.length))
+  await Promise.all(Array.from({ length: size }, worker))
+  return results
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+// Borra archivos de spill mas viejos que ttlMs. Nunca debe fallar la tool.
+async function pruneSpill(ttlMs) {
   try {
     const entries = await readdir(SPILL_DIR)
     const now = Date.now()
@@ -139,48 +288,80 @@ async function pruneSpill() {
         const file = join(SPILL_DIR, name)
         try {
           const info = await stat(file)
-          if (now - info.mtimeMs > SPILL_TTL_MS) await unlink(file)
+          if (now - info.mtimeMs > ttlMs) await unlink(file)
         } catch {}
       }),
     )
   } catch {}
 }
 
-// Guarda stdout+stderr completos de un comando y devuelve la ruta del archivo.
-async function spillResult(result, index) {
-  await mkdir(SPILL_DIR, { recursive: true })
-  const rand = Math.random().toString(16).slice(2, 6)
-  const file = join(SPILL_DIR, `${stamp()}-${index + 1}-${slugify(result.command)}-${rand}.log`)
-  const parts = [
-    `$ ${result.command}${result.workdir ? `   (cwd: ${result.workdir})` : ""}`,
-    `exit ${result.code} en ${result.ms}ms`,
-  ]
-  if (result.stdout) parts.push("--- stdout ---\n" + result.stdout)
-  if (result.stderr) parts.push("--- stderr ---\n" + result.stderr)
-  if (!result.stdout && !result.stderr) parts.push("(sin output)")
-  const content = parts.join("\n")
-  await writeFile(file, content, "utf8")
-  return {
-    path: file,
-    bytes: Buffer.byteLength(content, "utf8"),
-    lines: content.split("\n").length,
+async function cleanupTemps(result) {
+  for (const cap of [result.stdout, result.stderr]) {
+    if (cap.overflow && cap.filePath) {
+      try {
+        await unlink(cap.filePath)
+      } catch {}
+    }
   }
 }
 
-// Aplica truncado head+tail (o lo saltea si doTruncate es false).
-// Solo si hubo truncado persiste el output completo.
-async function prepare(result, maxOutput, index, doTruncate) {
-  const out = doTruncate ? truncate(result.stdout, maxOutput) : { text: result.stdout, truncated: false }
-  const err = doTruncate ? truncate(result.stderr, maxOutput) : { text: result.stderr, truncated: false }
+// Arma el archivo con el output completo (header + stdout + stderr) a partir
+// del texto buffereado o de los archivos temporales del derrame.
+async function spillResult(result) {
+  await mkdir(SPILL_DIR, { recursive: true })
+  const path = result.spillBase
+  const header = [
+    `$ ${result.command}${result.workdir ? `   (cwd: ${result.workdir})` : ""}`,
+    `exit ${result.code} en ${result.ms}ms`,
+    "",
+  ].join("\n")
+  await writeFile(path, header, "utf8")
+
+  for (const [name, cap] of [["stdout", result.stdout], ["stderr", result.stderr]]) {
+    if (cap.total === 0) continue
+    if (cap.overflow) {
+      await appendFile(path, `--- ${name} ---\n`, "utf8")
+      await pipeline(createReadStream(cap.filePath), createWriteStream(path, { flags: "a" }))
+      await appendFile(path, "\n", "utf8")
+    } else {
+      await appendFile(path, `--- ${name} ---\n${cap.text()}\n`, "utf8")
+    }
+  }
+  if (result.stdout.total === 0 && result.stderr.total === 0) {
+    await appendFile(path, "(sin output)\n", "utf8")
+  }
+
+  const info = await stat(path)
+  return {
+    path,
+    bytes: info.size,
+    lines: result.stdout.lines + result.stderr.lines + 4,
+  }
+}
+
+// Resuelve truncado/spill por comando. Solo si hubo truncado se persiste el
+// output completo; los temporales del derrame siempre se limpian.
+async function prepare(result) {
+  let out
+  let err
+  if (result.doTruncate) {
+    out = await result.stdout.display(result.maxOutput)
+    err = await result.stderr.display(result.maxOutput)
+  } else {
+    out = { text: await result.stdout.fullText(), truncated: false }
+    err = { text: await result.stderr.fullText(), truncated: false }
+  }
+
   let spill = null
   let spillError = null
   if (out.truncated || err.truncated) {
     try {
-      spill = await spillResult(result, index)
+      spill = await spillResult(result)
     } catch (writeErr) {
       spillError = String(writeErr?.message ?? writeErr)
     }
   }
+  await cleanupTemps(result)
   return { ...result, stdoutOut: out.text, stderrOut: err.text, spill, spillError }
 }
 
@@ -207,6 +388,16 @@ function format(results) {
 export default {
   id: "batch-commands",
   async setup(ctx) {
+    const opt = ctx?.options ?? {}
+    const positive = (value, fallback) => (Number.isFinite(value) && value > 0 ? value : fallback)
+    const defaults = {
+      timeout: positive(opt.timeout, DEFAULT_TIMEOUT_MS),
+      concurrency: positive(opt.concurrency, DEFAULT_CONCURRENCY),
+      maxOutput: positive(opt.max_output, DEFAULT_MAX_OUTPUT),
+      truncate: opt.truncate !== false,
+      spillTtlMs: positive(opt.spill_ttl_ms, DEFAULT_SPILL_TTL_MS),
+    }
+
     await ctx.tool.transform((editor) => {
       editor.add({
         name: "batch",
@@ -229,7 +420,15 @@ export default {
                 properties: {
                   command: { type: "string", description: "Comando a correr." },
                   workdir: { type: "string", description: "Directorio de trabajo (opcional)." },
-                  timeout: { type: "number", description: "Timeout en ms (default 120000)." },
+                  timeout: { type: "number", description: `Timeout en ms (opcional; default ${defaults.timeout}).` },
+                  max_output: {
+                    type: "number",
+                    description: `Cuanto output conservar de este comando, en chars (opcional; pisa el default de la llamada).`,
+                  },
+                  truncate: {
+                    type: "boolean",
+                    description: "Truncado para este comando (opcional; pisa el default de la llamada).",
+                  },
                 },
                 required: ["command"],
                 additionalProperties: false,
@@ -237,11 +436,11 @@ export default {
             },
             concurrency: {
               type: "number",
-              description: `Cuantos comandos correr a la vez (default ${DEFAULT_CONCURRENCY}).`,
+              description: `Cuantos comandos correr a la vez (default ${defaults.concurrency}).`,
             },
             max_output: {
               type: "number",
-              description: `Cuanto output conservar por comando, en chars (default ${DEFAULT_MAX_OUTPUT}; se ignora si truncate es false).`,
+              description: `Cuanto output conservar por comando, en chars (default ${defaults.maxOutput}; se ignora si truncate es false).`,
             },
             truncate: {
               type: "boolean",
@@ -257,17 +456,27 @@ export default {
 
           const concurrency = Number.isFinite(input?.concurrency)
             ? input.concurrency
-            : DEFAULT_CONCURRENCY
+            : defaults.concurrency
           const maxOutput = Number.isFinite(input?.max_output)
             ? input.max_output
-            : DEFAULT_MAX_OUTPUT
-          const doTruncate = input?.truncate !== false
+            : defaults.maxOutput
+          const doTruncate = input?.truncate !== undefined ? input.truncate !== false : defaults.truncate
+          const callDefaults = { ...defaults, maxOutput, truncate: doTruncate }
 
-          await context?.progress?.({ status: `corriendo ${jobs.length} comandos` })
+          try {
+            await context?.progress?.({ status: `corriendo ${jobs.length} comandos` })
+          } catch {}
 
-          const results = await runPool(jobs, concurrency, context?.signal)
-          await pruneSpill()
-          const prepared = await Promise.all(results.map((r, i) => prepare(r, maxOutput, i, doTruncate)))
+          const onDone = (n) => {
+            try {
+              const pending = context?.progress?.({ status: `batch: ${n}/${jobs.length} comandos completados` })
+              if (pending && typeof pending.catch === "function") pending.catch(() => {})
+            } catch {}
+          }
+
+          const results = await runPool(jobs, concurrency, context?.signal, callDefaults, onDone)
+          await pruneSpill(defaults.spillTtlMs)
+          const prepared = await Promise.all(results.map((r) => prepare(r)))
           return { content: format(prepared) }
         },
       })
