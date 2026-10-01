@@ -13,6 +13,8 @@
 //   deriva el resto a un archivo temporal y conserva cabeza y cola para el
 //   recorte (asi un output de GBs no revienta el proceso).
 // - Al vencer el timeout se mata el grupo de procesos completo (nietos incluidos).
+// - Si un comando falla, el resumen agrega "posibles errores:" con las lineas
+//   clave del output (hasta 5), para no tener que abrir el spill.
 // - Progreso en vivo via context.progress (x/N completados).
 // - Limpieza de spill: barre los archivos mas viejos que spill_ttl_ms al
 //   cargar el plugin y en cada uso del tool.
@@ -38,6 +40,9 @@ const KEEP_MAX = 1024 * 1024
 // superan este tope, se recorta con head+tail y se deriva el completo al
 // spill (un output de MBs no debe entrar entero al contexto por accidente).
 const SAFETY_CAP_CHARS = 64 * 1024
+const ERROR_SIGNAL_LIMIT = 5
+const ERROR_LINE_RE =
+  /(error|fail|cannot|no such file|not found|not ok|exception|timed out|timeout|eacces|enoent|✖)/i
 
 function truncate(text, max) {
   if (typeof text !== "string") return { text: "", truncated: false }
@@ -382,6 +387,23 @@ async function prepare(result) {
   return { ...result, stdoutOut: out.text, stderrOut: err.text, spill, spillError, safety }
 }
 
+// Busca lineas que parezcan errores en el texto ya recortado, para que el
+// resumen sea autosuficiente cuando un comando falla.
+function errorSignals(text, limit = ERROR_SIGNAL_LIMIT) {
+  if (!text) return []
+  const seen = new Set()
+  const signals = []
+  for (const raw of String(text).split("\n")) {
+    const line = raw.trim()
+    if (!line || line.length > 300 || !ERROR_LINE_RE.test(line)) continue
+    if (seen.has(line)) continue
+    seen.add(line)
+    signals.push(line.slice(0, 200))
+    if (signals.length >= limit) break
+  }
+  return signals
+}
+
 function format(results) {
   const lines = []
   const failed = results.filter((r) => !r.ok).length
@@ -390,6 +412,13 @@ function format(results) {
     lines.push("")
     lines.push(`$ ${r.command}${r.workdir ? `   (cwd: ${r.workdir})` : ""}`)
     lines.push(`exit ${r.code} en ${r.ms}ms`)
+    if (!r.ok) {
+      const senales = errorSignals(`${r.stdoutOut ?? ""}\n${r.stderrOut ?? ""}`)
+      if (senales.length > 0) {
+        lines.push("posibles errores:")
+        for (const senal of senales) lines.push(`- ${senal}`)
+      }
+    }
     if (r.safety) {
       lines.push(
         `[truncate:false superó el límite de seguridad (${formatSize(SAFETY_CAP_CHARS)} por comando): ` +
@@ -437,6 +466,7 @@ export default {
           "ni explores el proyecto para confirmarlo. " +
           "Si un output se recorta, muestra inicio y final e informa la ruta del archivo con el output completo; " +
           "abrilo con grep o lectura parcial solo si el pedido exige un dato que el resumen no tenga. " +
+          "Si un comando falla, incluye 'posibles errores:' con las líneas clave de su output. " +
           `Con truncate:false devuelve los outputs completos, salvo que un comando supere el límite de ` +
           `seguridad (${formatSize(SAFETY_CAP_CHARS)} por comando): ahí recorta y deriva igual al archivo.`,
         input: {
