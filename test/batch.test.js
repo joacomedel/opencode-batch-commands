@@ -8,6 +8,7 @@ import plugin from "../src/batch.js"
 // Comandos portables que generan output determinista.
 const LONG_OUTPUT = "head -c 2000 /dev/zero | tr '\\0' 'x'"
 const HUGE_OUTPUT = "head -c 2000000 /dev/zero | tr '\\0' 'y'"
+const BIG_OUTPUT = "head -c 100000 /dev/zero | tr '\\0' 'z'"
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -92,6 +93,28 @@ test("truncate:false devuelve el output completo sin recortar ni derivar", async
   assert.doesNotMatch(content, /recortado/)
   assert.doesNotMatch(content, /output completo/)
   assert.ok(content.includes("x".repeat(2000)), "debe incluir los 2000 chars de stdout")
+})
+
+test("truncate:false con output gigante aplica el limite de seguridad y deriva a spill", async () => {
+  const tool = await loadTool()
+  const { content } = await tool.execute(
+    { commands: [{ command: BIG_OUTPUT }], truncate: false },
+    {},
+  )
+  assert.match(content, /límite de seguridad/)
+  assert.match(content, /\[recortado \d+ chars\]/)
+  assert.equal(
+    content.includes("z".repeat(100_000)),
+    false,
+    "no debe entrar el output completo al resumen",
+  )
+
+  const spillPath = spillPathFrom(content)
+  assert.ok(spillPath, "debe informar la ruta del output completo")
+  assert.ok(statSync(spillPath).size > 90_000, "el spill debe tener el output completo (~100 KB)")
+  const full = readFileSync(spillPath, "utf8")
+  assert.ok(full.trimEnd().endsWith("z"), "el spill debe conservar el final del output")
+  unlinkSync(spillPath)
 })
 
 test("max_output y truncate se pueden pisar por comando", async () => {
