@@ -1,0 +1,272 @@
+{
+  "info": {
+    "id": "ses_f07289faaffeD3sWwcK1lTdGnk",
+    "projectID": "e429995b92b72f183f15b5e7e2c1cbb9085a51af",
+    "model": {
+      "id": "longcat-2.5-preview-free",
+      "providerID": "opencode-go",
+      "variant": "default"
+    },
+    "cost": 0,
+    "tokens": {
+      "input": 20355,
+      "output": 309,
+      "reasoning": 203,
+      "cache": {
+        "read": 11648,
+        "write": 0
+      }
+    },
+    "outcome": "succeeded",
+    "time": {
+      "created": 1790881259780,
+      "updated": 1790881260701,
+      "idle": 1790881283352
+    },
+    "title": "bench-sin-2",
+    "location": {
+      "directory": "/home/jm/opencode/benchmarks/batch-vs-sin-plugin/workspace"
+    }
+  },
+  "messages": [
+    {
+      "id": "msg_0f8d7610e0015y7ZBlRkqt09Ls",
+      "time": {
+        "created": 1790881260725
+      },
+      "text": "\"En este proyecto corré los cuatro checks: npm test, npm run lint, npm run typecheck y npm run build. Decime cuáles pasan y cuáles fallan, con una línea por check. No modifiques archivos ni investigues más allá de eso.\"",
+      "files": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_0f8d764be001fU1U4QkTJJR4hC",
+      "time": {
+        "created": 1790881260766,
+        "streamed": 1790881272340,
+        "completed": 1790881272540
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "longcat-2.5-preview-free",
+        "providerID": "opencode-go",
+        "variant": "default"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "\nEl usuario quiere que corra los cuatro checks del proyecto (npm test, npm run lint, npm run typecheck y npm run build) y le diga cuáles pasan y cuáles fallan, con una línea por check. No quiere que modifique archivos ni investigue más allá.\n\nVoy a correr los cuatro comandos en paralelo ya que son independientes entre sí.",
+          "state": {
+            "reasoningField": "reasoning_content"
+          },
+          "time": {
+            "created": 1790881264378,
+            "completed": 1790881272325
+          }
+        },
+        {
+          "type": "text",
+          "text": "Corro los cuatro checks en paralelo:"
+        },
+        {
+          "type": "tool",
+          "id": "call_a7efcf4995be4d96bb7bc89e",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm test",
+              "workdir": "/home/jm/opencode/benchmarks/batch-vs-sin-plugin/workspace",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": " under concurrency (59ms)\nok 132 - auth: maps on empty input (42ms)\nok 133 - auth: updates with defaults (153ms)\nok 134 - auth: loads correctly (249ms)\nok 135 - reporting: updates on empty input (145ms)\nok 136 - webhooks: deletes without side effects (187ms)\nok 137 - webhooks: maps on empty input (52ms)\nok 138 - search: creates under concurrency (12ms)\nok 139 - checkout: validates correctly (194ms)\nok 140 - reporting: validates on empty input (199ms)\nok 141 - users: updates with defaults (246ms)\nok 142 - users: maps on empty input (265ms)\nok 143 - orders: deletes on empty input (280ms)\nok 144 - orders: updates with defaults (208ms)\nok 145 - reporting: deletes without side effects (129ms)\nok 146 - inventory: loads correctly (172ms)\nok 147 - auth: creates without side effects (255ms)\nok 148 - reporting: validates on empty input (233ms)\nok 149 - reporting: creates correctly (85ms)\nok 150 - orders: loads under concurrency (164ms)\nok 151 - reporting: filters under concurrency (261ms)\nok 152 - orders: validates with defaults (86ms)\nok 153 - search: maps under concurrency (230ms)\nok 154 - reporting: maps without side effects (91ms)\nok 155 - search: updates with defaults (233ms)\nok 156 - cart: filters with defaults (125ms)\nok 157 - reporting: maps without side effects (249ms)\nok 158 - reporting: loads under concurrency (182ms)\nok 159 - inventory: filters correctly (169ms)\nok 160 - users: loads under concurrency (272ms)\nok 161 - cart: filters correctly (227ms)\nok 162 - reporting: maps with defaults (101ms)\nok 163 - inventory: creates under concurrency (38ms)\nok 164 - webhooks: updates without side effects (9ms)\nok 165 - cart: filters without side effects (72ms)\nok 166 - users: deletes without side effects (242ms)\nok 167 - cart: maps with defaults (12ms)\nok 168 - inventory: loads on empty input (85ms)\nok 169 - webhooks: loads under concurrency (202ms)\nok 170 - cart: maps without side effects (28ms)\nok 171 - reporting: creates with defaults (265ms)\nok 172 - reporting: validates with defaults (251ms)\nok 173 - billing: validates on empty input (162ms)\nok 174 - users: filters correctly (125ms)\nok 175 - billing: deletes without side effects (97ms)\nok 176 - users: maps without side effects (4ms)\nok 177 - auth: deletes on empty input (260ms)\nok 178 - webhooks: loads under concurrency (241ms)\nok 179 - webhooks: filters correctly (12ms)\nok 180 - billing: filters under concurrency (84ms)\nok 181 - search: deletes on empty input (211ms)\nok 182 - reporting: loads with defaults (44ms)\nok 183 - billing: maps on empty input (225ms)\nok 184 - search: deletes without side effects (285ms)\nok 185 - cart: filters correctly (106ms)\nok 186 - reporting: maps without side effects (102ms)\nok 187 - cart: filters correctly (0ms)\nok 188 - webhooks: maps on empty input (256ms)\nok 189 - cart: validates correctly (237ms)\nok 190 - webhooks: deletes with defaults (205ms)\nok 191 - reporting: creates with defaults (248ms)\nok 192 - users: maps without side effects (239ms)\nok 193 - auth: creates without side effects (7ms)\nok 194 - search: deletes correctly (40ms)\nok 195 - auth: validates on empty input (123ms)\nok 196 - search: deletes under concurrency (17ms)\nok 197 - checkout: validates under concurrency (75ms)\nok 198 - billing: loads correctly (233ms)\nok 199 - inventory: filters correctly (25ms)\nok 200 - billing: updates correctly (154ms)\nok 201 - cart: creates without side effects (40ms)\nok 202 - users: deletes under concurrency (194ms)\nok 203 - billing: validates under concurrency (73ms)\nok 204 - inventory: validates correctly (287ms)\nok 205 - reporting: updates under concurrency (297ms)\nok 206 - search: updates correctly (274ms)\nok 207 - cart: validates with defaults (252ms)\nok 208 - auth: loads under concurrency (190ms)\nok 209 - webhooks: filters with defaults (175ms)\nok 210 - checkout: updates correctly (182ms)\nok 211 - checkout: deletes with defaults (146ms)\nok 212 - checkout: updates with defaults (170ms)\nok 213 - auth: updates correctly (81ms)\nok 214 - checkout: creates under concurrency (88ms)\nok 215 - webhooks: filters under concurrency (10ms)\nok 216 - cart: loads correctly (102ms)\nok 217 - auth: filters correctly (171ms)\nok 218 - checkout: creates on empty input (205ms)\nok 219 - search: maps with defaults (183ms)\nok 220 - users: validates on empty input (37ms)\nok 221 - inventory: loads under concurrency (108ms)\nok 222 - cart: maps without side effects (192ms)\nok 223 - billing: filters on empty input (240ms)\nok 224 - inventory: updates with defaults (78ms)\nok 225 - auth: creates with defaults (43ms)\nok 226 - inventory: filters correctly (38ms)\nok 227 - inventory: maps under concurrency (119ms)\nok 228 - orders: loads without side effects (285ms)\nok 229 - webhooks: filters on empty input (95ms)\nok 230 - auth: updates on empty input (239ms)\nok 231 - webhooks: loads with defaults (87ms)\nok 232 - billing: deletes without side effects (65ms)\nok 233 - auth: maps under concurrency (192ms)\nok 234 - webhooks: validates under concurrency (249ms)\nok 235 - users: updates correctly (47ms)\nok 236 - inventory: creates correctly (147ms)\nok 237 - users: maps under concurrency (260ms)\nok 238 - cart: loads correctly (42ms)\nok 239 - webhooks: validates without side effects (150ms)\nok 240 - users: filters on empty input (73ms)\nok 241 - orders: updates correctly (256ms)\nok 242 - reporting: updates without side effects (22ms)\nok 243 - webhooks: updates with defaults (200ms)\nok 244 - search: updates with defaults (112ms)\nok 245 - inventory: filters correctly (139ms)\nok 246 - webhooks: deletes on empty input (67ms)\nok 247 - auth: validates under concurrency (157ms)\nok 248 - inventory: maps under concurrency (232ms)\nok 249 - checkout: deletes without side effects (262ms)\nok 250 - webhooks: loads with defaults (149ms)\nok 251 - search: updates with defaults (1ms)\nok 252 - inventory: deletes correctly (231ms)\nok 253 - reporting: filters without side effects (12ms)\nok 254 - cart: creates without side effects (106ms)\nok 255 - users: updates with defaults (117ms)\nok 256 - reporting: updates on empty input (15ms)\nok 257 - checkout: validates without side effects (38ms)\nok 258 - webhooks: validates correctly (30ms)\nok 259 - cart: deletes without side effects (211ms)\nok 260 - webhooks: filters under concurrency (190ms)\nok 261 - checkout: creates under concurrency (66ms)\nok 262 - orders: filters correctly (267ms)\nok 263 - inventory: deletes under concurrency (70ms)\nok 264 - inventory: loads with defaults (64ms)\nok 265 - cart: creates under concurrency (160ms)\nok 266 - orders: maps with defaults (251ms)\nok 267 - orders: validates on empty input (245ms)\nok 268 - reporting: updates with defaults (119ms)\nok 269 - billing: deletes correctly (110ms)\nok 270 - orders: loads with defaults (215ms)\nok 271 - reporting: updates correctly (299ms)\nok 272 - inventory: loads correctly (219ms)\nok 273 - webhooks: creates without side effects (170ms)\nok 274 - search: deletes without side effects (41ms)\nok 275 - search: filters on empty input (75ms)\nok 276 - orders: loads on empty input (15ms)\nok 277 - orders: filters under concurrency (225ms)\nok 278 - checkout: filters with defaults (32ms)\nok 279 - search: filters under concurrency (181ms)\nok 280 - cart: maps correctly (56ms)\nok 281 - inventory: creates without side effects (184ms)\nok 282 - auth: creates with defaults (61ms)\nok 283 - users: maps under concurrency (138ms)\nok 284 - billing: creates correctly (258ms)\nok 285 - reporting: validates on empty input (229ms)\nok 286 - cart: validates with defaults (259ms)\nok 287 - search: deletes under concurrency (85ms)\nok 288 - reporting: loads under concurrency (137ms)\nok 289 - cart: creates with defaults (207ms)\nok 290 - search: updates correctly (154ms)\nok 291 - billing: maps under concurrency (132ms)\nok 292 - reporting: validates under concurrency (225ms)\nok 293 - orders: creates without side effects (99ms)\nok 294 - cart: validates under concurrency (186ms)\nok 295 - cart: loads without side effects (295ms)\nok 296 - checkout: maps with defaults (145ms)\nok 297 - users: filters on empty input (134ms)\nok 298 - checkout: maps with defaults (32ms)\nok 299 - search: loads correctly (230ms)\nok 300 - orders: deletes under concurrency (257ms)\n\n\n[showing lines 137-306 of 306; full output saved to /home/jm/.local/share/opencode/shell/e429995b92b72f183f15b5e7e2c1cbb9085a51af/sh_0f8d7922e001HCCCm8c8LIe8cx.out]"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": true,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881266844,
+            "ran": 1790881272328,
+            "completed": 1790881272500
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_d562585a147c475fbf5c5bd2",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm run lint",
+              "workdir": "/home/jm/opencode/benchmarks/batch-vs-sin-plugin/workspace",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "tatement left in code\nsrc/checkout/helpers.ts:111:71  warning  no-unused-vars  expected '===' and instead saw '=='\nsrc/users/types.ts:238:1  warning  no-console  console statement left in code\nsrc/reporting/index.ts:227:62  warning  no-unused-vars  promise returned but not awaited\nsrc/reporting/client.ts:317:88  error    no-unused-vars  'value' is assigned a value but never used\nsrc/reporting/schema.ts:298:90  warning  no-unused-vars  'value' is assigned a value but never used\nsrc/orders/worker.ts:221:22  warning  no-shadow  unexpected any\nsrc/reporting/schema.ts:109:37  warning  no-console  unexpected any\nsrc/inventory/worker.ts:145:3  warning  no-console  unexpected any\nsrc/reporting/worker.ts:286:2  warning  eqeqeq  missing explicit return type\nsrc/users/schema.ts:229:27  warning  consistent-return  prefer const over let\nsrc/billing/client.ts:307:73  warning  prefer-const  console statement left in code\nsrc/billing/schema.ts:183:75  warning  prefer-const  console statement left in code\nsrc/webhooks/client.ts:47:8  warning  no-console  promise returned but not awaited\nsrc/billing/client.ts:129:49  warning  no-shadow  expected '===' and instead saw '=='\nsrc/search/store.ts:397:14  warning  prefer-const  expected '===' and instead saw '=='\nsrc/auth/client.ts:260:4  warning  no-shadow  missing explicit return type\nsrc/search/index.ts:220:60  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/inventory/client.ts:379:95  warning  no-console  prefer const over let\nsrc/search/helpers.ts:70:66  warning  consistent-return  promise returned but not awaited\nsrc/cart/service.ts:354:16  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/cart/types.ts:381:99  warning  prefer-const  promise returned but not awaited\nsrc/cart/types.ts:179:16  warning  no-floating-promises  unexpected any\nsrc/inventory/client.ts:131:4  warning  no-console  unexpected any\nsrc/orders/helpers.ts:34:92  warning  consistent-return  prefer const over let\nsrc/users/client.ts:334:8  warning  prefer-const  expected '===' and instead saw '=='\nsrc/orders/schema.ts:341:84  warning  consistent-return  prefer const over let\nsrc/auth/schema.ts:125:47  warning  no-console  'value' is assigned a value but never used\nsrc/checkout/worker.ts:374:18  warning  eqeqeq  console statement left in code\nsrc/cart/index.ts:334:32  warning  no-shadow  expected '===' and instead saw '=='\nsrc/reporting/schema.ts:242:25  warning  no-floating-promises  expected '===' and instead saw '=='\nsrc/reporting/service.ts:99:26  warning  no-floating-promises  expected '===' and instead saw '=='\nsrc/billing/types.ts:116:46  warning  no-floating-promises  unexpected any\nsrc/auth/store.ts:176:97  warning  consistent-return  unexpected any\nsrc/cart/index.ts:169:45  warning  no-console  prefer const over let\nsrc/users/store.ts:200:66  warning  no-console  promise returned but not awaited\nsrc/auth/schema.ts:338:47  warning  no-floating-promises  missing explicit return type\nsrc/orders/helpers.ts:320:48  warning  no-console  missing explicit return type\nsrc/inventory/types.ts:317:65  warning  no-shadow  unexpected any\nsrc/inventory/store.ts:62:55  warning  no-shadow  'value' is assigned a value but never used\nsrc/webhooks/types.ts:316:60  warning  consistent-return  unexpected any\nsrc/auth/client.ts:154:6  warning  consistent-return  prefer const over let\nsrc/checkout/types.ts:65:16  warning  no-unused-vars  console statement left in code\nsrc/users/types.ts:276:29  error    no-console  'value' is assigned a value but never used\nsrc/inventory/helpers.ts:265:32  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/checkout/client.ts:17:1  warning  no-unused-vars  'value' is assigned a value but never used\nsrc/users/index.ts:81:62  warning  no-floating-promises  prefer const over let\nsrc/search/service.ts:235:32  warning  no-unused-vars  'value' is assigned a value but never used\nsrc/orders/store.ts:3:65  warning  consistent-return  expected '===' and instead saw '=='\nsrc/users/index.ts:286:39  warning  no-shadow  expected '===' and instead saw '=='\nsrc/orders/store.ts:223:94  warning  no-unused-vars  unexpected any\nsrc/orders/client.ts:3:88  warning  prefer-const  console statement left in code\nsrc/webhooks/helpers.ts:378:15  warning  no-unused-vars  promise returned but not awaited\nsrc/cart/store.ts:303:84  warning  eqeqeq  unexpected any\nsrc/billing/store.ts:275:69  warning  no-unused-vars  expected '===' and instead saw '=='\nsrc/checkout/types.ts:111:66  warning  eqeqeq  promise returned but not awaited\nsrc/search/service.ts:36:92  warning  consistent-return  prefer const over let\nsrc/cart/store.ts:258:80  warning  prefer-const  prefer const over let\nsrc/checkout/helpers.ts:208:98  warning  eqeqeq  prefer const over let\nsrc/auth/store.ts:141:58  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/users/schema.ts:29:45  warning  eqeqeq  unexpected any\nsrc/checkout/worker.ts:398:39  warning  no-console  missing explicit return type\nsrc/users/types.ts:61:94  warning  consistent-return  missing explicit return type\nsrc/inventory/service.ts:218:78  warning  no-floating-promises  unexpected any\nsrc/inventory/worker.ts:167:38  warning  eqeqeq  missing explicit return type\nsrc/auth/store.ts:376:66  warning  prefer-const  console statement left in code\nsrc/reporting/schema.ts:395:66  warning  eqeqeq  console statement left in code\nsrc/inventory/helpers.ts:68:63  warning  no-shadow  unexpected any\nsrc/cart/worker.ts:280:90  warning  eqeqeq  missing explicit return type\nsrc/orders/client.ts:252:77  warning  consistent-return  console statement left in code\nsrc/webhooks/client.ts:146:3  warning  no-unused-vars  'value' is assigned a value but never used\nsrc/cart/client.ts:196:36  warning  no-floating-promises  missing explicit return type\nsrc/checkout/worker.ts:14:31  warning  prefer-const  promise returned but not awaited\nsrc/cart/service.ts:149:22  warning  no-unused-vars  console statement left in code\nsrc/webhooks/types.ts:95:44  warning  prefer-const  expected '===' and instead saw '=='\nsrc/inventory/helpers.ts:146:9  warning  no-console  console statement left in code\nsrc/orders/helpers.ts:261:88  warning  no-shadow  unexpected any\nsrc/checkout/service.ts:292:90  warning  no-unused-vars  unexpected any\nsrc/orders/client.ts:293:99  warning  no-shadow  'value' is assigned a value but never used\nsrc/reporting/client.ts:192:12  warning  no-shadow  promise returned but not awaited\nsrc/orders/worker.ts:41:28  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/orders/schema.ts:375:70  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/auth/worker.ts:176:33  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/webhooks/helpers.ts:125:78  warning  no-console  promise returned but not awaited\nsrc/reporting/client.ts:152:94  warning  no-console  promise returned but not awaited\nsrc/orders/schema.ts:375:73  warning  no-console  expected '===' and instead saw '=='\nsrc/search/helpers.ts:200:57  warning  prefer-const  'value' is assigned a value but never used\nsrc/inventory/client.ts:40:85  warning  eqeqeq  missing explicit return type\nsrc/orders/service.ts:291:72  warning  prefer-const  unexpected any\nsrc/orders/store.ts:255:27  warning  eqeqeq  missing explicit return type\nsrc/search/client.ts:55:25  warning  prefer-const  'value' is assigned a value but never used\nsrc/cart/client.ts:326:50  warning  no-shadow  'value' is assigned a value but never used\nsrc/orders/index.ts:121:86  warning  no-shadow  prefer const over let\nsrc/orders/client.ts:272:96  warning  no-console  'value' is assigned a value but never used\nsrc/users/service.ts:223:21  warning  prefer-const  unexpected any\nsrc/webhooks/types.ts:225:6  warning  no-shadow  prefer const over let\nsrc/inventory/schema.ts:14:30  warning  consistent-return  promise returned but not awaited\nsrc/orders/types.ts:7:49  warning  no-unused-vars  'value' is assigned a value but never used\nsrc/cart/index.ts:138:57  warning  eqeqeq  'value' is assigned a value but never used\n\nx 20 problems (20 errors, 460 warnings)\n\n\n[showing lines 388-488 of 488; full output saved to /home/jm/.local/share/opencode/shell/e429995b92b72f183f15b5e7e2c1cbb9085a51af/sh_0f8d7922e0027MUSV83UtZXLkQ.out]"
+              },
+              {
+                "type": "text",
+                "text": "Exited with code 1"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": true,
+              "exit": 1
+            }
+          },
+          "time": {
+            "created": 1790881267363,
+            "ran": 1790881272331,
+            "completed": 1790881272523
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_c0491a562de840a8adddfad0",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm run typecheck",
+              "workdir": "/home/jm/opencode/benchmarks/batch-vs-sin-plugin/workspace",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "src/billing/client.ts  ok (66ms)\nsrc/orders/helpers.ts  ok (38ms)\nsrc/reporting/client.ts  ok (62ms)\nsrc/users/store.ts  ok (9ms)\nsrc/orders/index.ts  ok (95ms)\nsrc/inventory/schema.ts  cached (51ms)\nsrc/orders/schema.ts  ok (60ms)\nsrc/users/worker.ts  ok (36ms)\nsrc/webhooks/helpers.ts  cached (36ms)\nsrc/webhooks/index.ts  ok (26ms)\nsrc/checkout/schema.ts  cached (53ms)\nsrc/webhooks/index.ts  ok (40ms)\nsrc/inventory/client.ts  cached (55ms)\nsrc/auth/schema.ts  ok (119ms)\nsrc/checkout/client.ts  ok (91ms)\nsrc/webhooks/store.ts  cached (14ms)\nsrc/users/helpers.ts  ok (118ms)\nsrc/reporting/types.ts  ok (95ms)\nsrc/reporting/client.ts  ok (15ms)\nsrc/cart/service.ts  cached (85ms)\nsrc/cart/schema.ts  ok (65ms)\nsrc/users/worker.ts  ok (33ms)\nsrc/orders/helpers.ts  cached (72ms)\nsrc/auth/service.ts  ok (84ms)\nsrc/cart/store.ts  ok (1ms)\nsrc/webhooks/index.ts  ok (58ms)\nsrc/users/service.ts  ok (44ms)\nsrc/cart/worker.ts  ok (31ms)\nsrc/orders/store.ts  ok (68ms)\nsrc/webhooks/service.ts  cached (21ms)\nsrc/billing/schema.ts  ok (28ms)\nsrc/webhooks/schema.ts  ok (119ms)\nsrc/inventory/client.ts  cached (102ms)\nsrc/orders/client.ts  ok (24ms)\nsrc/reporting/index.ts  ok (69ms)\nsrc/checkout/client.ts  ok (79ms)\nsrc/auth/helpers.ts  ok (18ms)\nsrc/search/types.ts  ok (31ms)\nsrc/cart/index.ts  cached (50ms)\nsrc/orders/helpers.ts  ok (66ms)\nsrc/reporting/helpers.ts  ok (25ms)\nsrc/checkout/store.ts  cached (24ms)\nsrc/webhooks/client.ts  cached (50ms)\nsrc/webhooks/service.ts  cached (45ms)\nsrc/billing/client.ts  ok (79ms)\nsrc/cart/types.ts  ok (7ms)\nsrc/auth/store.ts  ok (11ms)\nsrc/checkout/index.ts  ok (96ms)\nsrc/inventory/worker.ts  cached (42ms)\nsrc/cart/client.ts  ok (56ms)\nsrc/orders/worker.ts  ok (55ms)\nsrc/checkout/index.ts  cached (110ms)\nsrc/webhooks/schema.ts  ok (15ms)\nsrc/orders/store.ts  cached (65ms)\nsrc/auth/helpers.ts  ok (111ms)\nsrc/webhooks/types.ts  ok (58ms)\nsrc/webhooks/types.ts  ok (28ms)\nsrc/orders/client.ts  ok (34ms)\nsrc/users/store.ts  ok (34ms)\nsrc/billing/types.ts  cached (97ms)\nsrc/inventory/worker.ts  ok (111ms)\nsrc/checkout/index.ts  cached (0ms)\nsrc/auth/helpers.ts  ok (26ms)\nsrc/auth/index.ts  ok (78ms)\nsrc/webhooks/index.ts  ok (49ms)\nsrc/search/client.ts  ok (78ms)\nsrc/auth/store.ts  cached (29ms)\nsrc/inventory/worker.ts  ok (18ms)\nsrc/checkout/store.ts  ok (81ms)\nsrc/orders/worker.ts  ok (8ms)\nsrc/users/store.ts  ok (48ms)\nsrc/users/types.ts  ok (27ms)\nsrc/billing/store.ts  ok (38ms)\nsrc/reporting/types.ts  ok (25ms)\nsrc/cart/store.ts  cached (20ms)\nsrc/webhooks/helpers.ts  ok (89ms)\nsrc/users/schema.ts  ok (35ms)\nsrc/inventory/index.ts  ok (111ms)\nsrc/inventory/index.ts  ok (67ms)\nsrc/orders/schema.ts  ok (76ms)\nsrc/inventory/index.ts  cached (57ms)\nsrc/users/types.ts  ok (5ms)\nsrc/auth/helpers.ts  ok (32ms)\nsrc/checkout/types.ts  ok (41ms)\nsrc/orders/helpers.ts  cached (51ms)\nsrc/webhooks/service.ts  ok (64ms)\nsrc/orders/worker.ts  cached (99ms)\nsrc/billing/store.ts  ok (30ms)\nsrc/orders/client.ts  ok (55ms)\nsrc/billing/schema.ts  ok (15ms)\nsrc/auth/index.ts  ok (60ms)\nsrc/auth/schema.ts  cached (12ms)\nsrc/search/service.ts  cached (111ms)\nsrc/auth/service.ts  ok (10ms)\nsrc/orders/service.ts  ok (85ms)\nsrc/auth/store.ts  ok (119ms)\nsrc/reporting/worker.ts  ok (60ms)\nsrc/billing/client.ts  ok (15ms)\nsrc/billing/index.ts  ok (40ms)\nsrc/reporting/helpers.ts  ok (119ms)\nsrc/inventory/types.ts  cached (32ms)\nsrc/inventory/helpers.ts  ok (59ms)\nsrc/users/service.ts  cached (72ms)\nsrc/cart/worker.ts  ok (107ms)\nsrc/orders/helpers.ts  cached (114ms)\nsrc/billing/worker.ts  cached (32ms)\nsrc/auth/helpers.ts  cached (14ms)\nsrc/billing/store.ts  cached (64ms)\nsrc/cart/service.ts  ok (34ms)\nsrc/webhooks/types.ts  ok (111ms)\nsrc/orders/helpers.ts  cached (107ms)\nsrc/users/store.ts  cached (96ms)\nsrc/users/service.ts  ok (50ms)\nsrc/reporting/client.ts  cached (55ms)\nsrc/reporting/types.ts  ok (112ms)\nsrc/auth/client.ts  ok (50ms)\nsrc/search/store.ts  ok (20ms)\nsrc/billing/index.ts  ok (37ms)\nsrc/orders/service.ts  ok (93ms)\nsrc/webhooks/helpers.ts  ok (68ms)\nsrc/inventory/schema.ts  ok (78ms)\nsrc/cart/schema.ts  cached (114ms)\nsrc/auth/helpers.ts  ok (16ms)\nsrc/checkout/client.ts  ok (61ms)\nsrc/cart/helpers.ts  cached (81ms)\nsrc/inventory/store.ts  ok (114ms)\nsrc/billing/schema.ts  ok (23ms)\nsrc/search/store.ts  cached (54ms)\nsrc/orders/worker.ts  ok (32ms)\nsrc/inventory/schema.ts  ok (41ms)\nsrc/cart/helpers.ts  ok (119ms)\nsrc/cart/index.ts  cached (106ms)\nsrc/checkout/client.ts  cached (102ms)\nsrc/auth/schema.ts  ok (58ms)\nsrc/billing/types.ts  cached (60ms)\nsrc/cart/store.ts  ok (22ms)\nsrc/billing/schema.ts  ok (104ms)\nsrc/cart/worker.ts  ok (14ms)\nsrc/users/client.ts  ok (0ms)\nsrc/reporting/store.ts  ok (1ms)\nsrc/webhooks/client.ts  ok (61ms)\nsrc/billing/store.ts  ok (107ms)\nsrc/reporting/worker.ts  ok (97ms)\nsrc/auth/store.ts  ok (77ms)\nsrc/cart/index.ts  ok (61ms)\nsrc/webhooks/index.ts  ok (119ms)\nsrc/inventory/types.ts  ok (6ms)\nsrc/search/worker.ts  ok (99ms)\nsrc/search/helpers.ts  ok (23ms)\nsrc/orders/client.ts  cached (2ms)\nsrc/orders/store.ts  ok (50ms)\nsrc/search/schema.ts  cached (1ms)\nsrc/inventory/client.ts  ok (2ms)\nsrc/orders/store.ts  cached (81ms)\nsrc/auth/client.ts  ok (61ms)\nsrc/inventory/schema.ts  ok (79ms)\nsrc/reporting/helpers.ts  cached (81ms)\nsrc/inventory/index.ts  ok (96ms)\nsrc/inventory/client.ts  ok (116ms)\nsrc/webhooks/service.ts  cached (17ms)\nsrc/billing/client.ts  ok (5ms)\nsrc/webhooks/helpers.ts  ok (88ms)\nsrc/cart/worker.ts  cached (50ms)\nsrc/billing/client.ts  ok (50ms)\nsrc/users/index.ts  ok (15ms)\nsrc/users/client.ts  ok (106ms)\nsrc/webhooks/helpers.ts  ok (95ms)\nsrc/checkout/helpers.ts  ok (35ms)\nsrc/auth/store.ts  cached (86ms)\nsrc/search/helpers.ts  cached (107ms)\nsrc/inventory/index.ts  ok (115ms)\nsrc/auth/index.ts  cached (114ms)\nsrc/search/schema.ts  cached (39ms)\nsrc/webhooks/helpers.ts  ok (50ms)\nsrc/reporting/service.ts  ok (49ms)\nsrc/search/index.ts  ok (109ms)\nsrc/orders/helpers.ts  ok (97ms)\nsrc/reporting/store.ts  ok (96ms)\nsrc/billing/client.ts  ok (50ms)\nsrc/inventory/helpers.ts  ok (81ms)\nsrc/checkout/store.ts  ok (67ms)\nsrc/cart/index.ts  ok (0ms)\nsrc/checkout/client.ts  cached (52ms)\nsrc/auth/schema.ts  cached (103ms)\nsrc/checkout/helpers.ts  ok (105ms)\nsrc/checkout/types.ts  ok (32ms)\nsrc/billing/worker.ts  ok (70ms)\nsrc/auth/types.ts  cached (94ms)\nsrc/auth/service.ts  ok (38ms)\nsrc/checkout/helpers.ts  ok (19ms)\nsrc/search/index.ts  ok (119ms)\nsrc/webhooks/worker.ts  ok (25ms)\nsrc/auth/store.ts  ok (87ms)\nsrc/billing/service.ts  ok (72ms)\nsrc/reporting/schema.ts  ok (32ms)\nsrc/orders/worker.ts  ok (54ms)\nsrc/auth/store.ts  ok (27ms)\nsrc/inventory/worker.ts  ok (94ms)\n\nFound 0 errors in 480 files (4 cached).\n\n[showing lines 289-488 of 488; full output saved to /home/jm/.local/share/opencode/shell/e429995b92b72f183f15b5e7e2c1cbb9085a51af/sh_0f8d7922e003VQJkN3AM5y1Mip.out]"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": true,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881270007,
+            "ran": 1790881272333,
+            "completed": 1790881272529
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_ef62444c70004e5fa63ce75c",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm run build",
+              "workdir": "/home/jm/opencode/benchmarks/batch-vs-sin-plugin/workspace",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": " orders-vendor 217.9 KB (49ms)\n[build] chunk 315 reporting-page 358.2 KB (280ms)\n[build] chunk 316 webhooks-page 363.0 KB (33ms)\n[build] chunk 317 cart-widget 190.5 KB (90ms)\n[build] chunk 318 inventory-runtime 403.2 KB (314ms)\n[build] chunk 319 reporting-widget 17.2 KB (112ms)\n[build] chunk 320 cart-page 369.9 KB (64ms)\n[build] chunk 321 reporting-runtime 363.0 KB (22ms)\n[build] chunk 322 orders-vendor 123.1 KB (122ms)\n[build] chunk 323 checkout-page 158.9 KB (322ms)\n[build] chunk 324 orders-widget 274.6 KB (107ms)\n[build] chunk 325 checkout-runtime 215.9 KB (233ms)\n[build] chunk 326 auth-page 148.7 KB (221ms)\n[build] chunk 327 users-runtime 14.7 KB (139ms)\n[build] chunk 328 checkout-widget 112.0 KB (182ms)\n[build] chunk 329 auth-widget 285.3 KB (184ms)\n[build] chunk 330 webhooks-widget 54.9 KB (74ms)\n[build] chunk 331 search-widget 89.4 KB (260ms)\n[build] chunk 332 webhooks-page 286.7 KB (9ms)\n[build] chunk 333 users-runtime 197.4 KB (362ms)\n[build] chunk 334 cart-widget 341.1 KB (21ms)\n[build] chunk 335 search-vendor 39.8 KB (346ms)\n[build] chunk 336 reporting-runtime 389.5 KB (142ms)\n[build] chunk 337 billing-widget 10.5 KB (306ms)\n[build] chunk 338 reporting-vendor 191.5 KB (295ms)\n[build] chunk 339 checkout-runtime 159.1 KB (166ms)\n[build] chunk 340 billing-widget 69.7 KB (151ms)\n[build] chunk 341 orders-widget 238.6 KB (0ms)\n[build] chunk 342 auth-page 357.0 KB (273ms)\n[build] chunk 343 inventory-runtime 208.0 KB (327ms)\n[build] chunk 344 auth-runtime 88.0 KB (363ms)\n[build] chunk 345 search-page 345.3 KB (162ms)\n[build] chunk 346 reporting-page 281.2 KB (237ms)\n[build] chunk 347 cart-vendor 90.9 KB (103ms)\n[build] chunk 348 reporting-page 388.6 KB (368ms)\n[build] chunk 349 reporting-vendor 386.3 KB (212ms)\n[build] chunk 350 cart-page 60.1 KB (148ms)\n[build] chunk 351 inventory-widget 159.2 KB (386ms)\n[build] chunk 352 users-vendor 78.2 KB (78ms)\n[build] chunk 353 billing-widget 349.1 KB (385ms)\n[build] chunk 354 billing-vendor 189.2 KB (185ms)\n[build] chunk 355 billing-runtime 85.3 KB (278ms)\n[build] chunk 356 search-widget 240.1 KB (360ms)\n[build] chunk 357 search-page 55.8 KB (106ms)\n[build] chunk 358 webhooks-vendor 167.9 KB (39ms)\n[build] chunk 359 webhooks-vendor 269.5 KB (373ms)\n[build] chunk 360 checkout-page 292.4 KB (394ms)\n[build] chunk 361 auth-vendor 82.1 KB (34ms)\n[build] chunk 362 cart-page 267.1 KB (290ms)\n[build] chunk 363 orders-runtime 89.3 KB (278ms)\n[build] chunk 364 checkout-widget 38.2 KB (373ms)\n[build] chunk 365 checkout-runtime 349.0 KB (132ms)\n[build] chunk 366 reporting-vendor 304.5 KB (264ms)\n[build] chunk 367 orders-runtime 398.9 KB (286ms)\n[build] chunk 368 orders-widget 19.1 KB (221ms)\n[build] chunk 369 billing-page 205.5 KB (375ms)\n[build] chunk 370 reporting-page 289.6 KB (139ms)\n[build] chunk 371 users-vendor 399.2 KB (156ms)\n[build] chunk 372 webhooks-vendor 261.7 KB (200ms)\n[build] chunk 373 inventory-widget 201.0 KB (85ms)\n[build] chunk 374 search-page 57.4 KB (161ms)\n[build] chunk 375 cart-widget 75.6 KB (135ms)\n[build] chunk 376 billing-runtime 261.1 KB (14ms)\n[build] chunk 377 orders-runtime 193.5 KB (352ms)\n[build] chunk 378 orders-page 194.6 KB (266ms)\n[build] chunk 379 users-page 197.2 KB (326ms)\n[build] chunk 380 users-widget 291.8 KB (13ms)\n[build] chunk 381 orders-page 88.3 KB (206ms)\n[build] chunk 382 reporting-widget 316.1 KB (173ms)\n[build] chunk 383 webhooks-vendor 8.6 KB (41ms)\n[build] chunk 384 users-widget 337.8 KB (75ms)\n[build] chunk 385 webhooks-widget 134.4 KB (156ms)\n[build] chunk 386 users-vendor 104.5 KB (60ms)\n[build] chunk 387 checkout-page 21.4 KB (150ms)\n[build] chunk 388 reporting-vendor 47.4 KB (303ms)\n[build] chunk 389 inventory-vendor 184.6 KB (309ms)\n[build] chunk 390 users-runtime 205.0 KB (265ms)\n[build] chunk 391 reporting-runtime 7.3 KB (35ms)\n[build] chunk 392 reporting-runtime 137.6 KB (223ms)\n[build] chunk 393 inventory-vendor 14.5 KB (396ms)\n[build] chunk 394 checkout-page 71.5 KB (163ms)\n[build] chunk 395 auth-vendor 58.6 KB (190ms)\n[build] chunk 396 webhooks-page 230.9 KB (263ms)\n[build] chunk 397 reporting-widget 195.5 KB (275ms)\n[build] chunk 398 users-vendor 211.8 KB (50ms)\n[build] chunk 399 cart-widget 48.2 KB (186ms)\n[build] chunk 400 billing-page 154.6 KB (319ms)\n[build] chunk 401 search-widget 395.2 KB (338ms)\n[build] chunk 402 auth-widget 96.0 KB (216ms)\n[build] chunk 403 cart-widget 300.4 KB (282ms)\n[build] chunk 404 billing-runtime 292.2 KB (399ms)\n[build] chunk 405 webhooks-vendor 11.3 KB (268ms)\n[build] chunk 406 users-vendor 397.3 KB (151ms)\n[build] chunk 407 checkout-vendor 76.4 KB (81ms)\n[build] chunk 408 checkout-vendor 395.2 KB (3ms)\n[build] chunk 409 orders-runtime 243.7 KB (219ms)\n[build] chunk 410 orders-widget 252.7 KB (311ms)\n[build] chunk 411 users-widget 15.7 KB (98ms)\n[build] chunk 412 inventory-runtime 214.0 KB (259ms)\n[build] chunk 413 webhooks-page 207.1 KB (322ms)\n[build] chunk 414 search-page 209.4 KB (200ms)\n[build] chunk 415 inventory-runtime 371.0 KB (180ms)\n[build] chunk 416 search-page 137.4 KB (227ms)\n[build] chunk 417 search-page 118.0 KB (268ms)\n[build] chunk 418 search-widget 257.7 KB (4ms)\n[build] chunk 419 webhooks-vendor 220.5 KB (33ms)\n[build] chunk 420 billing-page 81.9 KB (342ms)\n[build] chunk 421 search-vendor 355.9 KB (152ms)\n[build] chunk 422 billing-page 325.6 KB (252ms)\n[build] chunk 423 billing-vendor 212.2 KB (17ms)\n[build] chunk 424 billing-widget 104.6 KB (329ms)\n[build] chunk 425 billing-runtime 201.8 KB (28ms)\n[build] chunk 426 reporting-runtime 381.1 KB (238ms)\n[build] chunk 427 users-runtime 38.2 KB (101ms)\n[build] chunk 428 inventory-runtime 50.1 KB (110ms)\n[build] chunk 429 inventory-widget 168.4 KB (34ms)\n[build] chunk 430 webhooks-widget 203.0 KB (283ms)\n[build] chunk 431 billing-widget 268.8 KB (365ms)\n[build] chunk 432 users-runtime 315.6 KB (70ms)\n[build] chunk 433 cart-page 403.3 KB (256ms)\n[build] chunk 434 billing-vendor 132.4 KB (97ms)\n[build] chunk 435 auth-vendor 85.8 KB (195ms)\n[build] chunk 436 inventory-runtime 137.2 KB (295ms)\n[build] chunk 437 cart-runtime 280.7 KB (262ms)\n[build] chunk 438 auth-page 102.7 KB (368ms)\n[build] chunk 439 orders-vendor 258.6 KB (257ms)\n[build] chunk 440 checkout-widget 196.3 KB (227ms)\n[build] chunk 441 reporting-page 264.1 KB (318ms)\n[build] chunk 442 auth-widget 139.1 KB (57ms)\n[build] chunk 443 search-widget 78.8 KB (173ms)\n[build] chunk 444 inventory-runtime 40.7 KB (72ms)\n[build] chunk 445 reporting-widget 100.1 KB (334ms)\n[build] chunk 446 webhooks-runtime 258.5 KB (74ms)\n[build] chunk 447 billing-page 155.6 KB (16ms)\n[build] chunk 448 checkout-vendor 143.8 KB (148ms)\n[build] chunk 449 inventory-widget 280.5 KB (306ms)\n[build] chunk 450 webhooks-widget 369.1 KB (43ms)\n[build] chunk 451 billing-vendor 380.5 KB (341ms)\n[build] chunk 452 billing-page 388.7 KB (288ms)\n[build] chunk 453 users-vendor 148.4 KB (324ms)\n[build] chunk 454 reporting-vendor 294.5 KB (176ms)\n[build] chunk 455 webhooks-page 241.5 KB (12ms)\n[build] chunk 456 checkout-vendor 307.0 KB (31ms)\n[build] chunk 457 inventory-page 9.5 KB (372ms)\n[build] chunk 458 billing-widget 280.6 KB (19ms)\n[build] chunk 459 search-page 223.6 KB (82ms)\n[build] chunk 460 auth-widget 26.9 KB (101ms)\n[build] chunk 461 orders-page 198.3 KB (181ms)\n[build] chunk 462 billing-runtime 35.2 KB (379ms)\n[build] chunk 463 checkout-page 195.2 KB (1ms)\n[build] chunk 464 orders-vendor 179.3 KB (319ms)\n[build] chunk 465 webhooks-widget 305.8 KB (327ms)\n[build] chunk 466 search-vendor 270.9 KB (292ms)\n[build] chunk 467 orders-runtime 90.3 KB (270ms)\n[build] chunk 468 users-widget 131.5 KB (134ms)\n[build] chunk 469 inventory-runtime 382.3 KB (72ms)\n[build] chunk 470 webhooks-runtime 290.1 KB (217ms)\n[build] chunk 471 search-runtime 128.6 KB (97ms)\n[build] chunk 472 auth-runtime 305.3 KB (134ms)\n[build] chunk 473 auth-page 401.5 KB (199ms)\n[build] chunk 474 orders-vendor 166.8 KB (387ms)\n[build] chunk 475 inventory-vendor 390.7 KB (78ms)\n[build] chunk 476 checkout-runtime 347.8 KB (306ms)\n[build] chunk 477 inventory-widget 316.8 KB (279ms)\n[build] chunk 478 reporting-vendor 386.0 KB (300ms)\n[build] chunk 479 orders-page 32.7 KB (239ms)\n[build] chunk 480 orders-page 133.0 KB (93ms)\n\nBuild finished in 1.2s -> dist/\n\n\n[showing lines 320-488 of 488; full output saved to /home/jm/.local/share/opencode/shell/e429995b92b72f183f15b5e7e2c1cbb9085a51af/sh_0f8d7922e004hDtEMZjHWe3xRu.out]"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": true,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881270969,
+            "ran": 1790881272337,
+            "completed": 1790881272489
+          }
+        }
+      ],
+      "snapshot": {
+        "start": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "end": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "files": []
+      },
+      "finish": "tool-calls",
+      "rawFinish": "tool_calls",
+      "cost": 0,
+      "tokens": {
+        "input": 2,
+        "output": 220,
+        "reasoning": 85,
+        "cache": {
+          "read": 9856,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_0f8d792e8001ezOVdmx66oogg1",
+      "time": {
+        "created": 1790881272566,
+        "streamed": 1790881283341,
+        "completed": 1790881283348
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "longcat-2.5-preview-free",
+        "providerID": "opencode-go",
+        "variant": "default"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "\nResultados de los cuatro checks:\n\n1. **npm test** — PASA. 300 tests, todos \"ok\".\n2. **npm run lint** — FALLA. Exit code 1, 20 errors y 460 warnings.\n3. **npm run typecheck** — PASA. 0 errores en 480 archivos.\n4. **npm run build** — PASA. Build exitoso en 1.2s.\n\nEl usuario pidió una línea por check, sin más investigación.",
+          "state": {
+            "reasoningField": "reasoning_content"
+          },
+          "time": {
+            "created": 1790881276972,
+            "completed": 1790881283338
+          }
+        },
+        {
+          "type": "text",
+          "text": "Resultados:\n\n- **npm test** — pasa (300 tests, todos ok).\n- **npm run lint** — falla (20 errores, 460 warnings).\n- **npm run typecheck** — pasa (0 errores en 480 archivos).\n- **npm run build** — pasa (build exitoso en 1.2s)."
+        }
+      ],
+      "snapshot": {
+        "start": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "end": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "files": []
+      },
+      "finish": "stop",
+      "rawFinish": "stop",
+      "cost": 0,
+      "tokens": {
+        "input": 20353,
+        "output": 89,
+        "reasoning": 118,
+        "cache": {
+          "read": 1792,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_0f8d7bd18001QdVd3n25ii45f7",
+      "time": {
+        "created": 1790881283352
+      },
+      "type": "idle",
+      "outcome": "succeeded"
+    }
+  ]
+}

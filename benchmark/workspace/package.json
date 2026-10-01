@@ -1,0 +1,11 @@
+{
+  "name": "bench-app",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node scripts/check.js test 480",
+    "lint": "node scripts/check.js lint 480",
+    "typecheck": "node scripts/check.js typecheck 480",
+    "build": "node scripts/check.js build 480"
+  }
+}

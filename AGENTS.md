@@ -28,6 +28,7 @@ test/batch.test.js          # tests: resumen, errores, overrides por comando,
                             # options, progreso, timeout (kill de árbol) y spill gigante
 test/spill-failure.test.js  # derrame roto (TMPDIR aislado): no crashea y avisa
 test/spill-perms.test.js    # permisos 0700/0600 del dir y archivos de spill
+benchmark/                  # A/B histórico del plugin vs OpenCode pelado (ver benchmark/README.md)
 ```
 
 ## Verificación rápida
