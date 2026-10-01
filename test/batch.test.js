@@ -1,6 +1,6 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
-import { existsSync, statSync, readFileSync, unlinkSync } from "node:fs"
+import { existsSync, statSync, readFileSync, unlinkSync, mkdirSync, writeFileSync, utimesSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import plugin from "../src/batch.js"
@@ -195,4 +195,21 @@ test("outputs gigantes se derraman a archivo sin agotar memoria", async () => {
   const full = readFileSync(spillPath, "utf8")
   assert.ok(full.trimEnd().endsWith("y"), "el spill debe conservar el final del output")
   unlinkSync(spillPath)
+})
+
+test("setup limpia spills viejos al cargar el plugin", async () => {
+  const dir = join(tmpdir(), "opencode", "batch")
+  mkdirSync(dir, { recursive: true })
+  const viejo = join(dir, `test-viejo-${Date.now()}.log`)
+  const nuevo = join(dir, `test-nuevo-${Date.now()}.log`)
+  writeFileSync(viejo, "viejo")
+  writeFileSync(nuevo, "nuevo")
+  const hace25hs = new Date(Date.now() - 25 * 60 * 60 * 1000)
+  utimesSync(viejo, hace25hs, hace25hs)
+
+  await loadTool()
+
+  assert.equal(existsSync(viejo), false, "el spill viejo debe borrarse al cargar el plugin")
+  assert.ok(existsSync(nuevo), "los spills recientes no se tocan")
+  unlinkSync(nuevo)
 })

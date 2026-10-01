@@ -15,7 +15,7 @@ un solo paso sin inflar el contexto del modelo.
 - **Truncado opcional con límite de seguridad**: con `truncate: false` el agente pide los outputs completos; si un comando supera 64 KB (stdout+stderr), se recorta con head+tail y se deriva igual al spill.
 - **Override por comando**: `timeout`, `max_output` y `truncate` se pueden pisar por comando, además de por llamada.
 - **Memoria acotada**: cada stream guarda hasta 1 MB en RAM; si se pasa, el resto se derrama en vivo a un archivo temporal (un output de GBs no revienta el proceso).
-- **Spill a archivo**: si hubo truncado, el output completo se guarda en `/tmp/opencode/batch/` y el resumen informa la ruta, el tamaño y las líneas.
+- **Spill a archivo**: si hubo truncado, el output completo se guarda en `/tmp/opencode/batch/` y el resumen informa la ruta, el tamaño y las líneas; los spills viejos se limpian al cargar el plugin y en cada uso.
 - **Progreso en vivo**: reporta `x/N comandos completados` mientras corre.
 - **Defaults por options**: `concurrency`, `max_output`, `timeout`, `truncate` y `spill_ttl_ms` configurables desde `opencode.jsonc`.
 - **Sin dependencias**: un solo archivo JS, no importa `@opencode/plugin`; se copia y funciona.
@@ -163,7 +163,7 @@ exit 0 en 2104ms
   sale el spill final (header + stdout + stderr) en
   `/tmp/opencode/batch/<fecha>-<n>-<slug>-<rand>.log`. `pruneSpill()` borra los
   archivos más viejos que `spill_ttl_ms` (default 24 h) cada vez que se usa el
-  tool.
+  tool y también al arrancar el plugin.
 
 ## Desarrollo
 
@@ -181,7 +181,7 @@ Estructura:
 
 ```text
 src/batch.js        # el plugin completo (un solo archivo)
-test/batch.test.js  # tests del resumen, errores, truncado y truncate:false
+test/batch.test.js  # tests del resumen, errores, truncado, límite de seguridad y limpieza
 ```
 
 Para probarlo a mano en OpenCode, copiá `src/batch.js` a tu carpeta de plugins

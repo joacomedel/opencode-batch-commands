@@ -14,6 +14,8 @@
 //   recorte (asi un output de GBs no revienta el proceso).
 // - Al vencer el timeout se mata el grupo de procesos completo (nietos incluidos).
 // - Progreso en vivo via context.progress (x/N completados).
+// - Limpieza de spill: barre los archivos mas viejos que spill_ttl_ms al
+//   cargar el plugin y en cada uso del tool.
 // - Defaults configurables por plugin options: concurrency, max_output,
 //   timeout, truncate y spill_ttl_ms.
 
@@ -419,6 +421,9 @@ export default {
       spillTtlMs: positive(opt.spill_ttl_ms, DEFAULT_SPILL_TTL_MS),
     }
 
+    // Higiene: barre los spills viejos al cargar el plugin, no solo al usarlo.
+    await pruneSpill(defaults.spillTtlMs)
+
     await ctx.tool.transform((editor) => {
       editor.add({
         name: "batch",
@@ -426,10 +431,14 @@ export default {
           "Ejecuta varios comandos shell en paralelo y devuelve un resumen compacto. " +
           "Devuelve un único string de texto con el resumen: no es un array, no lo iteres ni lo indexes; " +
           "en Code Mode asignalo a una variable y devolvelo tal cual. " +
-          "Ideal para correr tests, greps o builds independientes en un solo paso sin llenar el contexto. " +
-          "Si un output se recorta, muestra inicio y final e informa la ruta del archivo con el output completo " +
-          "(consultalo con grep o lectura parcial si necesitás un dato puntual; no re-ejecutes el comando). " +
-          "Con truncate:false devuelve los outputs completos sin recortar, cuando necesitás el detalle entero.",
+          "Usalo para 2 o más comandos con salida voluminosa (tests, builds, greps); " +
+          "para un solo comando o salidas chicas, usá shell directo. " +
+          "El resumen alcanza para decidir si los comandos pasaron o fallaron: no re-ejecutes comandos " +
+          "ni explores el proyecto para confirmarlo. " +
+          "Si un output se recorta, muestra inicio y final e informa la ruta del archivo con el output completo; " +
+          "abrilo con grep o lectura parcial solo si el pedido exige un dato que el resumen no tenga. " +
+          `Con truncate:false devuelve los outputs completos, salvo que un comando supere el límite de ` +
+          `seguridad (${formatSize(SAFETY_CAP_CHARS)} por comando): ahí recorta y deriva igual al archivo.`,
         input: {
           type: "object",
           properties: {
