@@ -10,10 +10,14 @@ un solo paso sin inflar el contexto del modelo.
 ## Características
 
 - **Paralelismo con pool**: hasta N comandos a la vez (default 8), configurable por llamada.
-- **Timeout por comando**: default 120000 ms; al vencer, el proceso se mata con SIGKILL.
+- **Timeout por comando**: default 120000 ms; al vencer, se mata el **grupo de procesos completo** (hijos y nietos, sin huérfanos).
 - **Salida compacta**: stdout/stderr se truncan con recorte head+tail (default 4000 chars por stream).
 - **Truncado opcional**: con `truncate: false` el agente pide los outputs completos sin recortar.
-- **Spill a archivo**: si hubo truncado, el output completo se guarda en `/tmp/opencode/batch/` y el resumen informa la ruta, el tamaño y las líneas (los logs de más de 24 h se limpian solos al usar el tool).
+- **Override por comando**: `timeout`, `max_output` y `truncate` se pueden pisar por comando, además de por llamada.
+- **Memoria acotada**: cada stream guarda hasta 1 MB en RAM; si se pasa, el resto se derrama en vivo a un archivo temporal (un output de GBs no revienta el proceso).
+- **Spill a archivo**: si hubo truncado, el output completo se guarda en `/tmp/opencode/batch/` y el resumen informa la ruta, el tamaño y las líneas.
+- **Progreso en vivo**: reporta `x/N comandos completados` mientras corre.
+- **Defaults por options**: `concurrency`, `max_output`, `timeout`, `truncate` y `spill_ttl_ms` configurables desde `opencode.jsonc`.
 - **Sin dependencias**: un solo archivo JS, no importa `@opencode/plugin`; se copia y funciona.
 
 ## Requisitos
@@ -63,12 +67,15 @@ Corré en paralelo "npm test" y "npm run lint" y dame el resumen de ambos.
 
 El tool devuelve un **único string de texto** con el resumen (no es un array).
 
-| Parámetro     | Tipo       | Default  | Descripción                                                        |
-| ------------- | ---------- | -------- | ------------------------------------------------------------------ |
-| `commands`    | `array`    | —        | Lista de comandos (requerido). Cada uno acepta `command` (string), `workdir` (string) y `timeout` (number, ms). |
-| `concurrency` | `number`   | `8`      | Cuántos comandos correr a la vez.                                  |
-| `max_output`  | `number`   | `4000`   | Cuántos caracteres conservar por stdout/stderr. Se ignora si `truncate` es `false`. |
-| `truncate`    | `boolean`  | `true`   | `false` devuelve stdout/stderr completos sin recortar ni derivar a archivo. |
+| Parámetro     | Tipo       | Default       | Descripción                                                        |
+| ------------- | ---------- | ------------- | ------------------------------------------------------------------ |
+| `commands`    | `array`    | —             | Lista de comandos (requerido). Cada uno acepta `command`, `workdir`, `timeout`, `max_output` y `truncate`; los tres últimos pisan los defaults de la llamada. |
+| `concurrency` | `number`   | `8` (options) | Cuántos comandos correr a la vez.                                  |
+| `max_output`  | `number`   | `4000` (options) | Cuántos caracteres conservar por stdout/stderr. Se ignora si `truncate` es `false`. |
+| `truncate`    | `boolean`  | `true` (options) | `false` devuelve stdout/stderr completos sin recortar ni derivar a archivo. |
+
+Los valores marcados como `(options)` son los defaults; se pueden cambiar por
+configuración (ver Configuración por options) o pisar en cada llamada.
 
 ### Ejemplo de llamada
 
@@ -84,7 +91,7 @@ El tool devuelve un **único string de texto** con el resumen (no es un array).
 }
 ```
 
-### Truncado: elegir por llamada
+### Truncado: elegir por llamada o por comando
 
 - **`truncate: true` (default)**: ideal para uso general. Si un output supera
   `max_output`, se muestra el inicio y el final, y el resumen indica dónde está
@@ -95,6 +102,34 @@ El tool devuelve un **único string de texto** con el resumen (no es un array).
 - **`truncate: false`**: el agente lo pide cuando necesita el detalle entero
   inline (por ejemplo, va a analizar todo el output). Ojo: outputs muy grandes
   consumen contexto; usalo con criterio.
+
+Los mismos campos (`truncate`, `max_output` y `timeout`) se pueden pasar dentro
+de cada comando para pisar lo de la llamada, por ejemplo: correr `npm test`
+truncado a 2000 chars y `git log` completo.
+
+### Configuración por options
+
+Cuando el plugin se carga desde `opencode.jsonc` (como paquete o directorio),
+podés fijar defaults:
+
+```jsonc
+{
+  "plugins": [
+    {
+      "package": "ruta/al/plugin",
+      "options": {
+        "concurrency": 4,
+        "max_output": 8000,
+        "timeout": 300000,
+        "truncate": true,
+        "spill_ttl_ms": 43200000
+      }
+    }
+  ]
+}
+```
+
+Cualquier valor de la llamada pisa estos defaults.
 
 ### Formato del resumen
 
@@ -114,13 +149,19 @@ exit 0 en 2104ms
 
 ## Cómo funciona
 
-- `setup(ctx)` registra el tool con `ctx.tool.transform()` (API de plugins V2).
-- Cada comando corre con `spawn(..., { shell: true })` y captura stdout/stderr.
+- `setup(ctx)` registra el tool con `ctx.tool.transform()` (API de plugins V2)
+  y lee los defaults de `ctx.options`.
+- Cada comando corre con `spawn(..., { shell: true, detached: true })` y
+  captura stdout/stderr con memoria acotada; al timeout se mata el grupo de
+  procesos completo (`SIGKILL` a `-pid`).
 - Un pool de workers limita la concurrencia (los resultados salen en el orden
-  de entrada, no en el orden de finalización).
-- Al truncar, `spillResult()` escribe el output completo en
-  `/tmp/opencode/batch/<fecha>-<n>-<slug>-<rand>.log`; `pruneSpill()` borra ahí
-  los archivos de más de 24 h cada vez que se usa el tool.
+  de entrada, no en el orden de finalización) y reporta `x/N` por
+  `context.progress`.
+- Si un stream supera 1 MB, el resto se derrama a un archivo temporal; de ahí
+  sale el spill final (header + stdout + stderr) en
+  `/tmp/opencode/batch/<fecha>-<n>-<slug>-<rand>.log`. `pruneSpill()` borra los
+  archivos más viejos que `spill_ttl_ms` (default 24 h) cada vez que se usa el
+  tool.
 
 ## Desarrollo
 
@@ -154,9 +195,8 @@ Se aceptan forks y PRs. Antes de mandar cambios:
 3. Respetá la API de plugins de OpenCode 2
    ([docs](https://opencode.ai/v2/docs/build/plugins)).
 
-Algunas ideas si querés extenderlo: truncado por comando en vez de por llamada,
-cancelación de comandos en curso, salida en streaming, o retención configurable
-del spill.
+Algunas ideas si querés extenderlo: cancelación de comandos en curso, salida en
+streaming, buffer configurable, o una UI de progreso más rica.
 
 ## Licencia
 
