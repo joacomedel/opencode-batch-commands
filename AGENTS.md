@@ -23,9 +23,11 @@ Referencia de la API: <https://opencode.ai/v2/docs/build/plugins>.
 ## Estructura
 
 ```text
-src/batch.js        # plugin completo (default export con id + setup)
-test/batch.test.js  # tests: resumen, errores, overrides por comando, options,
-                    # progreso, timeout (kill de árbol) y spill gigante
+src/batch.js                # plugin completo (default export con id + setup)
+test/batch.test.js          # tests: resumen, errores, overrides por comando,
+                            # options, progreso, timeout (kill de árbol) y spill gigante
+test/spill-failure.test.js  # derrame roto (TMPDIR aislado): no crashea y avisa
+test/spill-perms.test.js    # permisos 0700/0600 del dir y archivos de spill
 ```
 
 ## Verificación rápida

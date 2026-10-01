@@ -11,11 +11,13 @@ un solo paso sin inflar el contexto del modelo.
 
 - **Paralelismo con pool**: hasta N comandos a la vez (default 8), configurable por llamada.
 - **Timeout por comando**: default 120000 ms; al vencer, se mata el **grupo de procesos completo** (hijos y nietos, sin huérfanos).
+- **Sin comandos colgados**: stdin cerrado; un comando que pida input interactivo no queda esperando hasta el timeout.
 - **Salida compacta**: stdout/stderr se truncan con recorte head+tail (default 4000 chars por stream).
 - **Truncado opcional con límite de seguridad**: con `truncate: false` el agente pide los outputs completos; si un comando supera 64 KB (stdout+stderr), se recorta con head+tail y se deriva igual al spill.
 - **Override por comando**: `timeout`, `max_output` y `truncate` se pueden pisar por comando, además de por llamada.
 - **Memoria acotada**: cada stream guarda hasta 1 MB en RAM; si se pasa, el resto se derrama en vivo a un archivo temporal (un output de GBs no revienta el proceso).
 - **Spill a archivo**: si hubo truncado, el output completo se guarda en `/tmp/opencode/batch/` y el resumen informa la ruta, el tamaño y las líneas; los spills viejos se limpian al cargar el plugin y en cada uso.
+- **Spills privados y robustos**: el directorio de spill (0700) y los archivos (0600) quedan solo para tu usuario; si el derrame falla, el resumen lo avisa (no hace pasar un output incompleto por completo).
 - **Progreso en vivo**: reporta `x/N comandos completados` mientras corre.
 - **Defaults por options**: `concurrency`, `max_output`, `timeout`, `truncate` y `spill_ttl_ms` configurables desde `opencode.jsonc`.
 - **Sin dependencias**: un solo archivo JS, no importa `@opencode/plugin`; se copia y funciona.
@@ -153,17 +155,19 @@ exit 0 en 2104ms
 
 - `setup(ctx)` registra el tool con `ctx.tool.transform()` (API de plugins V2)
   y lee los defaults de `ctx.options`.
-- Cada comando corre con `spawn(..., { shell: true, detached: true })` y
-  captura stdout/stderr con memoria acotada; al timeout se mata el grupo de
+- Cada comando corre con
+  `spawn(..., { shell: true, detached: true, stdio: ["ignore", "pipe", "pipe"] })`
+  y captura stdout/stderr con memoria acotada; al timeout se mata el grupo de
   procesos completo (`SIGKILL` a `-pid`).
 - Un pool de workers limita la concurrencia (los resultados salen en el orden
   de entrada, no en el orden de finalización) y reporta `x/N` por
   `context.progress`.
 - Si un stream supera 1 MB, el resto se derrama a un archivo temporal; de ahí
   sale el spill final (header + stdout + stderr) en
-  `/tmp/opencode/batch/<fecha>-<n>-<slug>-<rand>.log`. `pruneSpill()` borra los
-  archivos más viejos que `spill_ttl_ms` (default 24 h) cada vez que se usa el
-  tool y también al arrancar el plugin.
+  `/tmp/opencode/batch/<fecha>-<n>-<slug>-<rand>.log`, con permisos privados
+  (directorio 0700, archivos 0600). `pruneSpill()` borra los archivos más viejos
+  que `spill_ttl_ms` (default 24 h) cada vez que se usa el tool y también al
+  arrancar el plugin.
 
 ## Desarrollo
 
@@ -180,8 +184,10 @@ comandos reales (`echo`, `exit`, etc.).
 Estructura:
 
 ```text
-src/batch.js        # el plugin completo (un solo archivo)
-test/batch.test.js  # tests del resumen, errores, truncado, límite de seguridad y limpieza
+src/batch.js                # el plugin completo (un solo archivo)
+test/batch.test.js          # tests del resumen, errores, truncado, límite de seguridad y limpieza
+test/spill-failure.test.js  # derrame roto con TMPDIR aislado: no crashea, avisa y conserva lo retenido
+test/spill-perms.test.js    # permisos 0700/0600 del directorio y los archivos de spill
 ```
 
 Para probarlo a mano en OpenCode, copiá `src/batch.js` a tu carpeta de plugins

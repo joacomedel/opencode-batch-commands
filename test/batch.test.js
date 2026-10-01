@@ -81,6 +81,11 @@ test("por defecto trunca y deriva el output completo a un archivo", async () => 
     spillPath.startsWith(join(tmpdir(), "opencode", "batch")),
     `el spill debe vivir en el directorio esperado: ${spillPath}`,
   )
+  assert.equal(
+    statSync(spillPath).mode & 0o777,
+    0o600,
+    "el archivo de spill debe ser privado (0600)",
+  )
   unlinkSync(spillPath)
 })
 
@@ -133,6 +138,56 @@ test("max_output y truncate se pueden pisar por comando", async () => {
   assert.ok(content.includes("x".repeat(2000)), "el segundo comando debe venir completo")
   const spillPath = spillPathFrom(content)
   if (spillPath) unlinkSync(spillPath)
+})
+
+test("max_output invalido no vuelca el output completo al resumen", async () => {
+  const tool = await loadTool()
+  // Por comando: el guard blinda el 0/negativo y no filtra todo el output.
+  for (const valor of [0, -5]) {
+    const { content } = await tool.execute(
+      { commands: [{ command: LONG_OUTPUT, max_output: valor }] },
+      {},
+    )
+    assert.equal(
+      content.includes("x".repeat(2000)),
+      false,
+      `con max_output ${valor} por comando no debe filtrarse el output completo`,
+    )
+    const spillPath = spillPathFrom(content)
+    assert.ok(spillPath, `con max_output ${valor} por comando debe derivar el output completo`)
+    unlinkSync(spillPath)
+  }
+  // En la llamada: los valores invalidos caen al default (4000).
+  for (const valor of [0, -5]) {
+    const { content } = await tool.execute(
+      { commands: [{ command: BIG_OUTPUT }], max_output: valor },
+      {},
+    )
+    assert.equal(
+      content.includes("z".repeat(100_000)),
+      false,
+      `con max_output ${valor} en la llamada debe usarse el default`,
+    )
+    const spillPath = spillPathFrom(content)
+    assert.ok(spillPath, `con max_output ${valor} en la llamada el output grande debe derivarse`)
+    unlinkSync(spillPath)
+  }
+})
+
+test("concurrency invalida cae al default sin romper", async () => {
+  const tool = await loadTool()
+  const { content } = await tool.execute(
+    { commands: [{ command: "echo a" }, { command: "echo b" }], concurrency: 0 },
+    {},
+  )
+  assert.match(content, /BATCH: 2 comandos, 2 ok, 0 con error/)
+})
+
+test("los comandos no quedan colgados esperando stdin", async () => {
+  const tool = await loadTool()
+  const { content } = await tool.execute({ commands: [{ command: "cat", timeout: 3000 }] }, {})
+  assert.match(content, /exit 0 en \d+ms/)
+  assert.doesNotMatch(content, /timeout/)
 })
 
 test("los defaults se configuran por options del plugin", async () => {

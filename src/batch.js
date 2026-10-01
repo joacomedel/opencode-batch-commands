@@ -46,6 +46,7 @@ const ERROR_LINE_RE =
 
 function truncate(text, max) {
   if (typeof text !== "string") return { text: "", truncated: false }
+  if (!Number.isFinite(max) || max <= 0) return { text: "", truncated: true }
   if (text.length <= max) return { text, truncated: false }
   const half = Math.floor(max / 2)
   return {
@@ -72,6 +73,7 @@ class StreamCapture {
     this.lines = 0
     this.stream = null
     this.startPromise = null
+    this.spillError = null
   }
 
   get overflow() {
@@ -96,6 +98,14 @@ class StreamCapture {
       this.stream.write(text)
       return
     }
+    if (this.spillError) {
+      // El derrame ya fallo: no reintentar; retener solo hasta BUFFER_LIMIT.
+      if (this.buffered + text.length <= BUFFER_LIMIT) {
+        this.parts.push(text)
+        this.buffered += text.length
+      }
+      return
+    }
     if (this.startPromise) {
       this.pending.push(text)
       return
@@ -110,20 +120,43 @@ class StreamCapture {
   }
 
   async start() {
+    let queued = null
     try {
-      await mkdir(SPILL_DIR, { recursive: true })
-      this.stream = createWriteStream(this.filePath, { flags: "a" })
-      const queued = [this.parts.join(""), ...this.pending]
+      await mkdir(SPILL_DIR, { recursive: true, mode: 0o700 })
+      const stream = createWriteStream(this.filePath, { flags: "a", mode: 0o600 })
+      // Sin listener, un fallo async del open tumba el proceso.
+      stream.on("error", (err) => {
+        this.spillError ??= err
+      })
+      queued = [this.parts.join(""), ...this.pending]
+      this.stream = stream
       this.parts = []
       this.buffered = 0
       this.pending = []
       for (const chunk of queued) {
-        if (chunk) this.stream.write(chunk)
+        if (chunk) stream.write(chunk)
       }
     } catch (err) {
+      // El derrame fallo: avisar en el resumen y no perder lo retenido.
+      this.spillError ??= err
+      this.stream = null
       this.startPromise = null
+      const retain = queued ?? [...this.parts, ...this.pending]
+      this.parts = []
+      this.buffered = 0
+      for (const chunk of retain) {
+        const room = Math.max(0, BUFFER_LIMIT - this.buffered)
+        if (chunk.length > room) {
+          if (room > 0) {
+            this.parts.push(chunk.slice(0, room))
+            this.buffered += room
+          }
+          continue
+        }
+        this.parts.push(chunk)
+        this.buffered += chunk.length
+      }
       this.pending = []
-      throw err
     }
   }
 
@@ -153,6 +186,7 @@ class StreamCapture {
 
   // Texto para mostrar en el resumen, respetando maxOutput.
   async display(maxOutput) {
+    if (!Number.isFinite(maxOutput) || maxOutput <= 0) return { text: "", truncated: true }
     if (!this.overflow) return truncate(this.text(), maxOutput)
     if (this.total <= maxOutput) {
       return { text: await readFile(this.filePath, "utf8"), truncated: false }
@@ -217,6 +251,7 @@ function runOne(job, index, signal, defaults) {
         signal,
         detached: process.platform !== "win32",
         windowsHide: true,
+        stdio: ["ignore", "pipe", "pipe"],
         env: process.env,
       })
     } catch (err) {
@@ -322,27 +357,30 @@ async function cleanupTemps(result) {
 // Arma el archivo con el output completo (header + stdout + stderr) a partir
 // del texto buffereado o de los archivos temporales del derrame.
 async function spillResult(result) {
-  await mkdir(SPILL_DIR, { recursive: true })
+  await mkdir(SPILL_DIR, { recursive: true, mode: 0o700 })
   const path = result.spillBase
   const header = [
     `$ ${result.command}${result.workdir ? `   (cwd: ${result.workdir})` : ""}`,
     `exit ${result.code} en ${result.ms}ms`,
     "",
   ].join("\n")
-  await writeFile(path, header, "utf8")
+  await writeFile(path, header, { encoding: "utf8", mode: 0o600 })
 
   for (const [name, cap] of [["stdout", result.stdout], ["stderr", result.stderr]]) {
     if (cap.total === 0) continue
     if (cap.overflow) {
-      await appendFile(path, `--- ${name} ---\n`, "utf8")
-      await pipeline(createReadStream(cap.filePath), createWriteStream(path, { flags: "a" }))
-      await appendFile(path, "\n", "utf8")
+      await appendFile(path, `--- ${name} ---\n`, { encoding: "utf8", mode: 0o600 })
+      await pipeline(
+        createReadStream(cap.filePath),
+        createWriteStream(path, { flags: "a", mode: 0o600 }),
+      )
+      await appendFile(path, "\n", { encoding: "utf8", mode: 0o600 })
     } else {
-      await appendFile(path, `--- ${name} ---\n${cap.text()}\n`, "utf8")
+      await appendFile(path, `--- ${name} ---\n${cap.text()}\n`, { encoding: "utf8", mode: 0o600 })
     }
   }
   if (result.stdout.total === 0 && result.stderr.total === 0) {
-    await appendFile(path, "(sin output)\n", "utf8")
+    await appendFile(path, "(sin output)\n", { encoding: "utf8", mode: 0o600 })
   }
 
   const info = await stat(path)
@@ -383,6 +421,8 @@ async function prepare(result) {
       spillError = String(writeErr?.message ?? writeErr)
     }
   }
+  const capError = result.stdout.spillError || result.stderr.spillError
+  if (capError) spillError = String(capError?.message ?? capError)
   await cleanupTemps(result)
   return { ...result, stdoutOut: out.text, stderrOut: err.text, spill, spillError, safety }
 }
@@ -429,7 +469,13 @@ function format(results) {
       const lineCount = `${r.spill.lines} línea${r.spill.lines === 1 ? "" : "s"}`
       lines.push(`[output completo (${formatSize(r.spill.bytes)}, ${lineCount}): ${r.spill.path}]`)
     }
-    if (r.spillError) lines.push(`[output completo no disponible: ${r.spillError}]`)
+    if (r.spillError) {
+      lines.push(
+        r.spill
+          ? `[aviso: el output completo puede estar incompleto: ${r.spillError}]`
+          : `[output completo no disponible: ${r.spillError}]`,
+      )
+    }
     if (r.stdoutOut) lines.push("--- stdout ---\n" + r.stdoutOut)
     if (r.stderrOut) lines.push("--- stderr ---\n" + r.stderrOut)
     if (!r.stdoutOut && !r.stderrOut) lines.push("(sin output)")
@@ -514,12 +560,8 @@ export default {
           const jobs = Array.isArray(input?.commands) ? input.commands : []
           if (jobs.length === 0) return { content: "BATCH: no se recibieron comandos." }
 
-          const concurrency = Number.isFinite(input?.concurrency)
-            ? input.concurrency
-            : defaults.concurrency
-          const maxOutput = Number.isFinite(input?.max_output)
-            ? input.max_output
-            : defaults.maxOutput
+          const concurrency = positive(input?.concurrency, defaults.concurrency)
+          const maxOutput = positive(input?.max_output, defaults.maxOutput)
           const doTruncate = input?.truncate !== undefined ? input.truncate !== false : defaults.truncate
           const callDefaults = { ...defaults, maxOutput, truncate: doTruncate }
 
