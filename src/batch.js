@@ -212,6 +212,8 @@ export default {
         name: "batch",
         description:
           "Ejecuta varios comandos shell en paralelo y devuelve un resumen compacto. " +
+          "Devuelve un único string de texto con el resumen: no es un array, no lo iteres ni lo indexes; " +
+          "en Code Mode asignalo a una variable y devolvelo tal cual. " +
           "Ideal para correr tests, greps o builds independientes en un solo paso sin llenar el contexto. " +
           "Si un output se recorta, muestra inicio y final e informa la ruta del archivo con el output completo " +
           "(consultalo con grep o lectura parcial si necesitás un dato puntual; no re-ejecutes el comando). " +

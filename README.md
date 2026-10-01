@@ -61,6 +61,8 @@ Corré en paralelo "npm test" y "npm run lint" y dame el resumen de ambos.
 
 ### Parámetros
 
+El tool devuelve un **único string de texto** con el resumen (no es un array).
+
 | Parámetro     | Tipo       | Default  | Descripción                                                        |
 | ------------- | ---------- | -------- | ------------------------------------------------------------------ |
 | `commands`    | `array`    | —        | Lista de comandos (requerido). Cada uno acepta `command` (string), `workdir` (string) y `timeout` (number, ms). |
