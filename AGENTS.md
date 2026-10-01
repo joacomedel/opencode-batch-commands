@@ -25,6 +25,7 @@ Referencia de la API: <https://opencode.ai/v2/docs/build/plugins>.
 ```text
 src/batch.js        # plugin completo (default export con id + setup)
 test/batch.test.js  # tests: resumen, errores, truncado, truncate:false
+benchmark/          # A/B histórico del plugin vs OpenCode pelado (ver benchmark/README.md)
 ```
 
 ## Verificación rápida

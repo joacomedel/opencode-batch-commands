@@ -120,6 +120,22 @@ exit 0 en 2104ms
   `/tmp/opencode/batch/<fecha>-<n>-<slug>-<rand>.log`; `pruneSpill()` borra ahí
   los archivos de más de 24 h cada vez que se usa el tool.
 
+## Benchmark
+
+Hay un A/B medido entre este plugin y OpenCode pelado en
+[`benchmark/`](benchmark/README.md): misma tarea, mismo modelo, 3 corridas por
+condición, tokens y costo medidos con `opencode session export`.
+
+| modelo | costo con plugin | costo sin plugin | chars de tools en contexto |
+| ------ | ---------------- | ---------------- | -------------------------- |
+| DeepSeek V4.1 Flash | $0,00150 | $0,00235 | −64% |
+| LongCat 2.5 Preview Free | $0 | $0 | +36% de contexto (el modelo no supo usar el retorno) |
+
+Con un modelo que maneja bien el retorno (un string, no un array), el plugin
+reduce el costo ~36% y el output de herramientas que entra al contexto ~64%.
+El caso LongCat queda documentado como ejemplo de mal uso (y motivó el hint de
+la descripción del tool).
+
 ## Desarrollo
 
 ```bash

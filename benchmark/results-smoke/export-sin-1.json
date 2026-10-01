@@ -1,0 +1,264 @@
+{
+  "info": {
+    "id": "ses_f072c5fcbffeM5JoNidnsK4fBw",
+    "projectID": "e429995b92b72f183f15b5e7e2c1cbb9085a51af",
+    "model": {
+      "id": "longcat-2.5-preview-free",
+      "providerID": "opencode-go",
+      "variant": "default"
+    },
+    "cost": 0,
+    "tokens": {
+      "input": 18600,
+      "output": 245,
+      "reasoning": 126,
+      "cache": {
+        "read": 3584,
+        "write": 0
+      }
+    },
+    "outcome": "succeeded",
+    "time": {
+      "created": 1790881014007,
+      "updated": 1790881014950,
+      "idle": 1790881031938
+    },
+    "title": "bench-sin-1",
+    "location": {
+      "directory": "/home/jm/opencode/benchmarks/batch-vs-sin-plugin/workspace"
+    }
+  },
+  "messages": [
+    {
+      "id": "msg_0f8d3a1000018bcMO4O0B83bFz",
+      "time": {
+        "created": 1790881014965
+      },
+      "text": "\"En este proyecto corré los cuatro checks: npm test, npm run lint, npm run typecheck y npm run build. Decime cuáles pasan y cuáles fallan, con una línea por check. No modifiques archivos ni investigues más allá de eso.\"",
+      "files": [],
+      "type": "user"
+    },
+    {
+      "id": "msg_0f8d3a4c1001uGUsSy5zczt3nL",
+      "time": {
+        "created": 1790881015005,
+        "streamed": 1790881026019,
+        "completed": 1790881026223
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "longcat-2.5-preview-free",
+        "providerID": "opencode-go",
+        "variant": "default"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "\nEl usuario quiere que corra los cuatro checks del proyecto (npm test, npm run lint, npm run typecheck y npm run build) y le diga cuáles pasan y cuáles fallan, con una línea por check. No quiere que modifique archivos ni investigue más allá.\n\nVoy a correr los cuatro comandos en paralelo ya que son independientes entre sí.\n",
+          "state": {
+            "reasoningField": "reasoning_content"
+          },
+          "time": {
+            "created": 1790881017592,
+            "completed": 1790881026001
+          }
+        },
+        {
+          "type": "text",
+          "text": "Corro los cuatro checks en paralelo:"
+        },
+        {
+          "type": "tool",
+          "id": "call_8e8234f3cb504fe6844f76ee",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm test 2>&1 | tail -30",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "ok 456 - reporting: deletes correctly (225ms)\nok 457 - search: updates with defaults (162ms)\nok 458 - inventory: updates correctly (171ms)\nok 459 - checkout: filters without side effects (19ms)\nok 460 - billing: validates without side effects (212ms)\nok 461 - webhooks: creates on empty input (164ms)\nok 462 - checkout: updates on empty input (161ms)\nok 463 - cart: deletes without side effects (287ms)\nok 464 - orders: validates with defaults (218ms)\nok 465 - checkout: loads under concurrency (5ms)\nok 466 - search: filters correctly (24ms)\nok 467 - cart: creates under concurrency (165ms)\nok 468 - cart: maps under concurrency (82ms)\nok 469 - auth: updates under concurrency (286ms)\nok 470 - users: updates with defaults (235ms)\nok 471 - reporting: creates without side effects (134ms)\nok 472 - auth: deletes under concurrency (186ms)\nok 473 - search: loads without side effects (62ms)\nok 474 - orders: updates under concurrency (260ms)\nok 475 - cart: deletes without side effects (14ms)\nok 476 - reporting: filters on empty input (233ms)\nok 477 - orders: maps with defaults (6ms)\nok 478 - checkout: updates correctly (232ms)\nok 479 - cart: validates under concurrency (147ms)\nok 480 - checkout: validates with defaults (174ms)\n\n# tests 480\n# pass 478\n# skipped 2\n# duration_ms 6880\n"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881022469,
+            "ran": 1790881026004,
+            "completed": 1790881026205
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_b45e9ca4c4ae466eae982998",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm run lint 2>&1 | tail -30",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "src/cart/client.ts:196:36  warning  no-floating-promises  missing explicit return type\nsrc/checkout/worker.ts:14:31  warning  prefer-const  promise returned but not awaited\nsrc/cart/service.ts:149:22  warning  no-unused-vars  console statement left in code\nsrc/webhooks/types.ts:95:44  warning  prefer-const  expected '===' and instead saw '=='\nsrc/inventory/helpers.ts:146:9  warning  no-console  console statement left in code\nsrc/orders/helpers.ts:261:88  warning  no-shadow  unexpected any\nsrc/checkout/service.ts:292:90  warning  no-unused-vars  unexpected any\nsrc/orders/client.ts:293:99  warning  no-shadow  'value' is assigned a value but never used\nsrc/reporting/client.ts:192:12  warning  no-shadow  promise returned but not awaited\nsrc/orders/worker.ts:41:28  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/orders/schema.ts:375:70  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/auth/worker.ts:176:33  warning  no-floating-promises  'value' is assigned a value but never used\nsrc/webhooks/helpers.ts:125:78  warning  no-console  promise returned but not awaited\nsrc/reporting/client.ts:152:94  warning  no-console  promise returned but not awaited\nsrc/orders/schema.ts:375:73  warning  no-console  expected '===' and instead saw '=='\nsrc/search/helpers.ts:200:57  warning  prefer-const  'value' is assigned a value but never used\nsrc/inventory/client.ts:40:85  warning  eqeqeq  missing explicit return type\nsrc/orders/service.ts:291:72  warning  prefer-const  unexpected any\nsrc/orders/store.ts:255:27  warning  eqeqeq  missing explicit return type\nsrc/search/client.ts:55:25  warning  prefer-const  'value' is assigned a value but never used\nsrc/cart/client.ts:326:50  warning  no-shadow  'value' is assigned a value but never used\nsrc/orders/index.ts:121:86  warning  no-shadow  prefer const over let\nsrc/orders/client.ts:272:96  warning  no-console  'value' is assigned a value but never used\nsrc/users/service.ts:223:21  warning  prefer-const  unexpected any\nsrc/webhooks/types.ts:225:6  warning  no-shadow  prefer const over let\nsrc/inventory/schema.ts:14:30  warning  consistent-return  promise returned but not awaited\nsrc/orders/types.ts:7:49  warning  no-unused-vars  'value' is assigned a value but never used\nsrc/cart/index.ts:138:57  warning  eqeqeq  'value' is assigned a value but never used\n\nx 20 problems (20 errors, 460 warnings)\n"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881024281,
+            "ran": 1790881026008,
+            "completed": 1790881026186
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_79b41e4e74c64f3196401e1e",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm run typecheck 2>&1 | tail -30",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "src/inventory/index.ts  ok (115ms)\nsrc/auth/index.ts  cached (114ms)\nsrc/search/schema.ts  cached (39ms)\nsrc/webhooks/helpers.ts  ok (50ms)\nsrc/reporting/service.ts  ok (49ms)\nsrc/search/index.ts  ok (109ms)\nsrc/orders/helpers.ts  ok (97ms)\nsrc/reporting/store.ts  ok (96ms)\nsrc/billing/client.ts  ok (50ms)\nsrc/inventory/helpers.ts  ok (81ms)\nsrc/checkout/store.ts  ok (67ms)\nsrc/cart/index.ts  ok (0ms)\nsrc/checkout/client.ts  cached (52ms)\nsrc/auth/schema.ts  cached (103ms)\nsrc/checkout/helpers.ts  ok (105ms)\nsrc/checkout/types.ts  ok (32ms)\nsrc/billing/worker.ts  ok (70ms)\nsrc/auth/types.ts  cached (94ms)\nsrc/auth/service.ts  ok (38ms)\nsrc/checkout/helpers.ts  ok (19ms)\nsrc/search/index.ts  ok (119ms)\nsrc/webhooks/worker.ts  ok (25ms)\nsrc/auth/store.ts  ok (87ms)\nsrc/billing/service.ts  ok (72ms)\nsrc/reporting/schema.ts  ok (32ms)\nsrc/orders/worker.ts  ok (54ms)\nsrc/auth/store.ts  ok (27ms)\nsrc/inventory/worker.ts  ok (94ms)\n\nFound 0 errors in 480 files (4 cached).\n"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881024780,
+            "ran": 1790881026011,
+            "completed": 1790881026214
+          }
+        },
+        {
+          "type": "tool",
+          "id": "call_e7025a9728294972b12e464e",
+          "name": "shell",
+          "executed": false,
+          "state": {
+            "status": "completed",
+            "input": {
+              "command": "npm run build 2>&1 | tail -30",
+              "timeout": 120000
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "[build] chunk 453 users-vendor 148.4 KB (324ms)\n[build] chunk 454 reporting-vendor 294.5 KB (176ms)\n[build] chunk 455 webhooks-page 241.5 KB (12ms)\n[build] chunk 456 checkout-vendor 307.0 KB (31ms)\n[build] chunk 457 inventory-page 9.5 KB (372ms)\n[build] chunk 458 billing-widget 280.6 KB (19ms)\n[build] chunk 459 search-page 223.6 KB (82ms)\n[build] chunk 460 auth-widget 26.9 KB (101ms)\n[build] chunk 461 orders-page 198.3 KB (181ms)\n[build] chunk 462 billing-runtime 35.2 KB (379ms)\n[build] chunk 463 checkout-page 195.2 KB (1ms)\n[build] chunk 464 orders-vendor 179.3 KB (319ms)\n[build] chunk 465 webhooks-widget 305.8 KB (327ms)\n[build] chunk 466 search-vendor 270.9 KB (292ms)\n[build] chunk 467 orders-runtime 90.3 KB (270ms)\n[build] chunk 468 users-widget 131.5 KB (134ms)\n[build] chunk 469 inventory-runtime 382.3 KB (72ms)\n[build] chunk 470 webhooks-runtime 290.1 KB (217ms)\n[build] chunk 471 search-runtime 128.6 KB (97ms)\n[build] chunk 472 auth-runtime 305.3 KB (134ms)\n[build] chunk 473 auth-page 401.5 KB (199ms)\n[build] chunk 474 orders-vendor 166.8 KB (387ms)\n[build] chunk 475 inventory-vendor 390.7 KB (78ms)\n[build] chunk 476 checkout-runtime 347.8 KB (306ms)\n[build] chunk 477 inventory-widget 316.8 KB (279ms)\n[build] chunk 478 reporting-vendor 386.0 KB (300ms)\n[build] chunk 479 orders-page 32.7 KB (239ms)\n[build] chunk 480 orders-page 133.0 KB (93ms)\n\nBuild finished in 1.2s -> dist/\n"
+              }
+            ],
+            "metadata": {
+              "status": "completed",
+              "truncated": false,
+              "exit": 0
+            }
+          },
+          "time": {
+            "created": 1790881025401,
+            "ran": 1790881026016,
+            "completed": 1790881026177
+          }
+        }
+      ],
+      "snapshot": {
+        "start": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "end": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "files": []
+      },
+      "finish": "tool-calls",
+      "rawFinish": "tool_calls",
+      "cost": 0,
+      "tokens": {
+        "input": 8066,
+        "output": 160,
+        "reasoning": 85,
+        "cache": {
+          "read": 1792,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_0f8d3d0b90019jNcLv7EgNvf5w",
+      "time": {
+        "created": 1790881026251,
+        "streamed": 1790881031924,
+        "completed": 1790881031935
+      },
+      "type": "assistant",
+      "agent": "build",
+      "model": {
+        "id": "longcat-2.5-preview-free",
+        "providerID": "opencode-go",
+        "variant": "default"
+      },
+      "content": [
+        {
+          "type": "reasoning",
+          "text": "\nEl usuario pidió una línea por check, indicando cuáles pasan y cuáles fallan. Voy a dar exactamente eso, sin agregar información extra ni modificar archivos.",
+          "state": {
+            "reasoningField": "reasoning_content"
+          },
+          "time": {
+            "created": 1790881029674,
+            "completed": 1790881031918
+          }
+        },
+        {
+          "type": "text",
+          "text": "- `npm test` → pasa (478 pass, 2 skipped)\n- `npm run lint` → falla (20 errors, 460 warnings)\n- `npm run typecheck` → pasa (0 errors en 480 archivos)\n- `npm run build` → pasa (build exitoso en 1.2s)"
+        }
+      ],
+      "snapshot": {
+        "start": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "end": "8014327a4b8a353a41324a523de38f59e0c0ed8c",
+        "files": []
+      },
+      "finish": "stop",
+      "rawFinish": "stop",
+      "cost": 0,
+      "tokens": {
+        "input": 10534,
+        "output": 85,
+        "reasoning": 41,
+        "cache": {
+          "read": 1792,
+          "write": 0
+        }
+      }
+    },
+    {
+      "id": "msg_0f8d3e702001N58xuRODgTFNZe",
+      "time": {
+        "created": 1790881031938
+      },
+      "type": "idle",
+      "outcome": "succeeded"
+    }
+  ]
+}

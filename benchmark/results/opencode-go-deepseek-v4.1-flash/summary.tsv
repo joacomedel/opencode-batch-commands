@@ -1,0 +1,7 @@
+condicion	run	session	input	output	reasoning	cache_read	cache_write	costo	seg	steps	tool_parts	shell_calls	batch_calls	batch_failed	result_chars	batch_loaded
+con	1	ses_f072300f8ffeWR0zsNT92UMO49	13537	567	255	34432	0	0.002627046	15	4	3	0	2	0	8629	si
+sin	1	ses_f0722c40bffeQ7rhSKH4DssDiq	11121	390	130	11520	0	0.00201471	15	2	4	4	0	0	6144	no
+con	2	ses_f07228bcaffey4AekG2NWRoEjO	3112	348	142	20736	0	0.000823008	10	2	1	0	1	0	8198	si
+sin	2	ses_f072262d3ffeclnaDwUe5QO9La	11513	500	604	30976	0	0.002482278	13	3	5	4	0	0	32344	no
+con	3	ses_f07223052ffe6m5xy1txUyNzM3	3372	325	419	33920	0	0.00105396	12	3	2	0	2	0	8614	si
+sin	3	ses_f07220480ffeAQ3NWJxbxUYdGT	11486	618	627	30848	0	0.002562444	14	3	5	5	0	0	32193	no
